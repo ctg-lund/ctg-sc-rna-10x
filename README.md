@@ -8,7 +8,7 @@
 ## USAGE
 
 1. For reproducibility, create a project / run directory in which you clone this repository, containing the nextflow.config, nf-pipeline, bin
-2. Clone and build the Singularity container for this pipeline: (https://github.com/perllb/ctg-containers/tree/main/sc-rna-10x/sc-rna-10x.v6)
+2. Clone and build the Singularity container for this pipeline: (https://github.com/perllb/ctg-sc-rna-10x/tree/master/container/sc-rna-10x.v6)
 3. Edit the nextflow.config file to fit your project and system. Set current directory as `basedir`. (from where you execute the pipeline).
 4. Edit your samplesheet to match the example samplesheet (same columns, with Sample_Species, count, agg, nuclei params for each sample added)
 5. Run pipeline 
