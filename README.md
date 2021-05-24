@@ -17,7 +17,7 @@ nohup nextflow run pipe-sc-rna-10x.nf > log.pipe-sc-rna-10x.txt &
 ```
 
 
-### Pipeline steps:
+## Pipeline steps:
 
 Cellranger version: cellranger v6.0 
 
@@ -30,7 +30,7 @@ Cellranger version: cellranger v6.0
 * `md5sum`: md5sum of all generated files
 
 
-### Output:
+## Output:
 * ctg-PROJ_ID-output
     * `qc`: Quality control output. 
         * cellranger metrics: Main metrics summarising the count / cell output 
@@ -46,7 +46,7 @@ Cellranger version: cellranger v6.0
     * `ctg-md5.PROJ_ID.txt`: text file with md5sum recursively from output dir root    
 
 
-### Samplesheet requirements:
+## Samplesheet requirements:
 
 Note: no header! only the rows shown below, starting with the column names.
 
@@ -69,10 +69,25 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 ```
 
 
-### Container
-https://github.com/perllb/ctg-containers/tree/main/sc-rna-10x/sc-rna-10x.v6
+## Container
+- `sc-rna-10x`: For 10x single cell mRNA-seq. Based on cellranger.
+https://github.com/perllb/ctg-sc-rna-10x/tree/master/container/sc-rna-10x.v6
 
-### Custom genome 
+### Build containers from recipes
+
+NOTE: Environment.yml file has to be in current working directory
+```
+sudo -E singularity build sc-rna-10x.v6.sif sc-rna-10x.v6-builder
+```
+Add path to .sif in nextflow.config
+
+
+### Run command with container
+```
+singularity exec --bind /fs1 sc-rna-10x.v6.sif cellranger count (..arguments..)
+```
+
+## Custom genome 
 
 If custom genome (not hg38 or mm10) is used
 
