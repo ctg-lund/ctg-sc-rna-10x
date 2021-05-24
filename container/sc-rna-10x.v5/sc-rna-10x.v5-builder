@@ -1,0 +1,86 @@
+Bootstrap:docker
+From:nfcore/base
+
+%labels
+	MAINTAINER Per Brattås <per.brattas@med.lu.se>
+	DESCRIPTION Singularity container Cellranger-v4 RNA
+	VERSION 0.0.1
+
+%environment
+	PATH=/opt/cellranger-5.0.0:/opt/bin:$PATH
+
+
+%files
+	/data/bnf/sw/bcl2fastq2-v2.20.0.422-Source.tar.gz /opt   
+
+%post
+	rm -rf /var/lib/apt/lists/*
+	apt -y clean
+	apt -y update
+	apt -y install libz-dev build-essential gettext cmake libxml2-dev libcurl4-openssl-dev libssl-dev make libbz2-dev libboost-dev python3-pip sudo unzip
+
+	mkdir -p /usr/share/man/man1
+	
+	sudo apt -y install default-jre	
+
+	# download/install fastqc
+	mkdir -p /opt/bin
+	cd /opt/bin/
+	wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.9.zip
+	unzip fastqc_v0.11.9.zip
+	chmod -R 777 FastQC
+	cd -
+
+        ln -s /opt/bin/FastQC/fastqc /opt/bin/
+
+	# WGET CELLRANGER v5
+	cd /opt
+	wget -O cellranger-5.0.0.tar.gz "https://cf.10xgenomics.com/releases/cell-exp/cellranger-5.0.0.tar.gz?Expires=1606963524&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9jZi4xMHhnZW5vbWljcy5jb20vcmVsZWFzZXMvY2VsbC1leHAvY2VsbHJhbmdlci01LjAuMC50YXIuZ3oiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE2MDY5NjM1MjR9fX1dfQ__&Signature=gd-H3KbtDA76N5lPcPlrjhNed-j-u9cC7UMTa5pJcbmiVjeg4GZmarH3OvDUAEGMwn8W5xCPvwnAC9sXeePQNFA2KNaHwNtKvY29Q1WFZgW4JVLchPZIFflRkKaJ-uE2e2xFaGKAroc~c93oyrWOvEwTgkUT0GJ~Lu0NgXaM426en~qLqhwCgry7SMmhXihwBFVCvCoVVKDJtKYjf5jG~sekt2X-g2a1ODe-t8yOJwBu-Cl2gaUvxgazrmhlkwqocc2~j0CiKtkQLohfcjOYZUR73rENyYvSDiVFNseEWLoIgU9g64y8~kpov6W8yOThQu4B0ymH9~31eSkdtE7eJw__&Key-Pair-Id=APKAI7S6A5RYOXBWRPDA"
+	
+
+	# TAR CELLRANGER v5
+	tar -zxvf cellranger-5.0.0.tar.gz
+
+	# WGET CR v5 references
+	# HUMAN ref
+	# GRCh38 - gencode v32/Ensembl98
+	wget https://cf.10xgenomics.com/supp/cell-exp/refdata-gex-GRCh38-2020-A.tar.gz
+	tar -zxvf refdata-gex-GRCh38-2020-A.tar.gz
+
+	# mm10 - gencode vM23 /Ensembl98
+	wget https://cf.10xgenomics.com/supp/cell-exp/refdata-gex-mm10-2020-A.tar.gz
+	tar -zxvf refdata-gex-mm10-2020-A.tar.gz
+
+
+	cd -
+
+	# CiteSeqCount
+	pip3 install cite-seq-count==1.4.3
+
+
+	# Setup multiqc
+	pip3 install multiqc
+
+	# Setup bcl2fastq
+	export TMP=/tmp
+	export SOURCE=/tmp${TMP}/bcl2fastq
+	export BUILD=${TMP}/bcl2fastq2-v2.20.0-build
+	export INSTALL_DIR=${SINGULARITY_ROOTFS}/opt/bcl2fastq2-v2.20.0
+
+
+        mkdir -p /opt/bcl2fastq
+        cd /opt/bcl2fastq
+        mkdir -p build
+
+	export C_INCLUDE_PATH=/usr/include/x86_64-linux-gnu
+
+	tar -xzvf /opt/bcl2fastq2-v2.20.0.422-Source.tar.gz
+        chmod ugo+x bcl2fastq/src/configure
+        chmod ugo+x bcl2fastq/src/cmake/bootstrap/installCmake.sh
+        cd build
+        ../bcl2fastq/src/configure --prefix=/opt/
+        make
+        make install
+
+
+	 
