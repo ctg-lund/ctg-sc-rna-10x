@@ -1,0 +1,9 @@
+Lane,Sample_ID,Sample_Name,index,Sample_Project,Sample_Species,count,agg,nuclei
+,S1,21_009,SI-TT-F3,projectX_Fabio,human,y,y,n
+,S2,21_010,SI-TT-G3,projectX,human,y,y,n
+,S3,21_011,SI-TT-H3,projectX,human,y,y,n
+,sample1,21_012,SI-TT-A4,projY,human,y,y,y
+,sample2,21_013,SI-TT-B4,projY,human,y,y,y
+,sample3,21_014,SI-TT-C4,projY,human,y,y,y
+
+
