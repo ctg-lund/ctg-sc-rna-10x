@@ -104,11 +104,8 @@ Example:
  
 ### Add custom genes (e.g. reporters) to cellranger annotation
 
-In the `bin` folder of this repository, please find the `ctg-cellranger-add2ref` script. 
-This script adds a custom gene to the cellranger ref
-https://github.com/perllb/ctg-pipelines/blob/main/ctg-sc-rna-10x/bin/ctg-cellranger-add2ref.sh
+Use the `ctg-cellranger-add2ref` script. 
 
-Documentation: 
-https://github.com/perllb/ctg-pipelines/blob/main/ctg-sc-rna-10x/bin/README_ctg-cellranger-add2ref.md
+https://github.com/perllb/ctg-cellranger-add2ref
 
 
