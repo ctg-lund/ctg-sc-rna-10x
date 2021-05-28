@@ -1,15 +1,20 @@
 #!/usr/bin/env nextFlow
 
-// set variables
-exp = params.experiment
+// Base params
+runfolder = params.runfolder
 basedir = params.basedir
-metaID = params.metaid
-OUTDIR = params.outdir
-FQDIR = params.fqdir
-CTGQC = params.ctgqc
-demux = params.demux
+metaid = params.metaid
+
+
+// Output dirs
+outdir = params.outdir
+fqdir = params.fqdir
+ctgqc = params.ctgqc
+
+// Demux args
 b2farg = params.bcl2fastqarg
 index = params.index
+demux = params.demux
 
 // Read and process CTG samplesheet 
 sheet = file(params.sheet)
@@ -21,18 +26,21 @@ println "============================="
 println ">>> sc-rna-10x pipeline for multiple projects / run >>>"
 println ""
 println "> INPUT: "
-println "> runfolder		: $exp "
+println ""
+println "> runfolder		: $runfolder "
 println "> sample-sheet		: $sheet "
-println "> run-meta-id		: $metaID "
+println "> run-meta-id		: $metaid "
 println "> basedir		: $basedir "
+println ""
+println " - demultiplexing arguments "
 println "> bcl2fastq-arg        : '${b2farg}' "
 println "> demux                : $demux " 
 println "> index                : $index "
 println ""
-println "> OUTPUT: "
-println "> output-dir           : $OUTDIR "
-println "> fastq-dir            : $FQDIR "
-println "> ctg-qc-dir           : $CTGQC "
+println "> - output directories "
+println "> output-dir           : $outdir "
+println "> fastq-dir            : $fqdir "
+println "> ctg-qc-dir           : $ctgqc "
 println "============================="
 
 
@@ -72,7 +80,7 @@ infoProject.subscribe { println "Info Projects: $it" }
 // Parse samplesheet
 process parsesheet {
 
-	tag "$metaID"
+	tag "$metaid"
 
 	input:
 	val sheet
@@ -85,45 +93,7 @@ process parsesheet {
 	demux == 'y'
 
 	"""
-#!/opt/conda/bin/python
-
-# import libs
-import csv
-
-with open(\'$newsheet\', 'w', newline='') as outfile:
-    writer = csv.writer(outfile)
-    writer.writerow(['[Data]'])
-    
-    if \'$index\' == 'dual':
-        writer.writerow(['Lane','Sample_ID','Sample_Name','Sample_Plate','Sample_Well','I7_Index_ID','index','I5_Index_ID','index2','Sample_Project'])
-    else:
-        writer.writerow(['Lane','Sample_ID','index','Sample_Project'])
-
-    with open(\'$sheet\', 'r') as infile:
-        my_reader = csv.reader(infile, delimiter=',')
-        # row counter to define first line
-        row_idx=0
-        for row in my_reader:
-            # if first line - get index of the 3 columns needed
-            if row_idx == 0:
-                laneidx = row.index('Lane')
-                sididx  = row.index('Sample_ID')
-                idxidx  = row.index('index')
-                projidx = row.index('Sample_Project')
-            else:
-                currlane = row[laneidx]
-                currsid = row[sididx]
-                curridx = row[idxidx]
-                currproj = row[projidx]
-
-                if \'$index\' == 'dual':
-                    writer.writerow([currlane,currsid,currsid,'','',curridx,curridx,curridx,curridx,currproj])
-                else:
-                    writer.writerow([currlane,currsid,curridx,currproj])
-
-		   
-            row_idx += 1
-
+python $basedir/bin/ctg-parse-samplesheet.10x.py -s $sheet -o $newsheet -i $index
 	"""
 }
 
@@ -132,7 +102,7 @@ with open(\'$newsheet\', 'w', newline='') as outfile:
 // Run mkFastq
 process mkfastq {
 
-	tag "$metaID"
+	tag "$metaid"
 
 	input:
         val sheet from demux_sheet
@@ -145,18 +115,13 @@ process mkfastq {
 
 	"""
 cellranger mkfastq \\
-	   --id=$metaID \\
-	   --run=$exp \\
+	   --id=$metaid \\
+	   --run=$runfolder \\
 	   --samplesheet=$sheet \\
 	   --jobmode=local \\
 	   --localmem=100 \\
-	   --output-dir $FQDIR \\
+	   --output-dir $fqdir \\
 	   $b2farg
-
-
-## multiqc on all fastq (mkfastq check)
-multiqc -f ${FQDIR} --outdir ${CTGQC}/$metaID/ -n ${metaID}_mkfastq_multiqc.report.html
-
 """
 
 }
@@ -177,15 +142,15 @@ process moveFastq {
     demux = 'y'
 
     """
-    mkdir -p ${OUTDIR}/${projid}
-    mkdir -p ${OUTDIR}/${projid}/fastq
+    mkdir -p ${outdir}/${projid}
+    mkdir -p ${outdir}/${projid}/fastq
 
-    mkdir -p ${OUTDIR}/${projid}/fastq/$sid
+    mkdir -p ${outdir}/${projid}/fastq/$sid
 
-    if [ -d ${FQDIR}/${projid}/$sid ]; then
-        mv ${FQDIR}/${projid}/$sid ${OUTDIR}/${projid}/fastq/
+    if [ -d ${fqdir}/${projid}/$sid ]; then
+        mv ${fqdir}/${projid}/$sid ${outdir}/${projid}/fastq/
     else
-	mv ${FQDIR}/${projid}/$sid* ${OUTDIR}/${projid}/fastq/$sid/
+	mv ${fqdir}/${projid}/$sid* ${outdir}/${projid}/fastq/$sid/
     fi
     """
 
@@ -194,7 +159,7 @@ process moveFastq {
 process count {
 
 	tag "${sid}-${projid}"
-	publishDir "${OUTDIR}/${projid}/count-cr/", mode: "copy", overwrite: true
+	publishDir "${outdir}/${projid}/count-cr/", mode: "copy", overwrite: true
 
 	input: 
 	val sheet
@@ -203,16 +168,16 @@ process count {
 
 	output:
         file "${sid}/outs/" into samplename
-        val "${OUTDIR}/${projid}/qc/cellranger/${sid}.metrics_summary.csv" into count_metrics
-	val "${OUTDIR}/${projid}/aggregate/${sid}.molecule_info.h5" into count_agg
+        val "${outdir}/${projid}/qc/cellranger/${sid}.metrics_summary.csv" into count_metrics
+	val "${outdir}/${projid}/aggregate/${sid}.molecule_info.h5" into count_agg
 
 	"""
         if [ $ref == "Human" ] || [ $ref == "human" ]
         then
-            genome="/projects/fs1/shared/references/hg38/cellranger/refdata-gex-GRCh38-2020-A"
+            genome=$params.human
         elif [ $ref == "mouse" ] || [ $ref == "Mouse" ]
         then
-            genome="/projects/fs1/shared/references/mm10/cellranger/refdata-gex-mm10-2020-A"
+            genome=$params.mouse
         elif [ $ref == "custom"  ] || [ $ref == "Custom" ] 
         then
             genome=${params.custom_genome}
@@ -221,13 +186,13 @@ process count {
             genome="ERR"
         fi
 
-        mkdir -p ${OUTDIR}/${projid}/count-cr/
+        mkdir -p ${outdir}/${projid}/count-cr/
 
 	if [ $nuclei == "y" ]
 	then
 		cellranger count \\
 	     --id=$sid \\
-	     --fastqs=${OUTDIR}/$projid/fastq/$sid \\
+	     --fastqs=${outdir}/$projid/fastq/$sid \\
 	     --sample=$sid \\
 	     --include-introns \\
              --project=$projid \\
@@ -236,43 +201,43 @@ process count {
 	else
 		cellranger count \\
 	     --id=$sid \\
-	     --fastqs=${OUTDIR}/$projid/fastq/$sid \\
+	     --fastqs=${outdir}/$projid/fastq/$sid \\
 	     --sample=$sid \\
              --project=$projid \\
 	     --transcriptome=\$genome \\
              --localcores=20 --localmem=110 
 	fi
 
-        mkdir -p ${OUTDIR}
-        mkdir -p ${OUTDIR}/${projid}
-        mkdir -p ${OUTDIR}/${projid}/summaries
-        mkdir -p ${OUTDIR}/${projid}/summaries/cloupe
-        mkdir -p ${OUTDIR}/${projid}/summaries/web-summaries
+        mkdir -p ${outdir}
+        mkdir -p ${outdir}/${projid}
+        mkdir -p ${outdir}/${projid}/summaries
+        mkdir -p ${outdir}/${projid}/summaries/cloupe
+        mkdir -p ${outdir}/${projid}/summaries/web-summaries
 
-	mkdir -p ${CTGQC}/${projid}
-	mkdir -p ${CTGQC}/${projid}/web-summaries
+	mkdir -p ${ctgqc}/${projid}
+	mkdir -p ${ctgqc}/${projid}/web-summaries
 
 	## Copy h5 file for aggregation
-	aggdir=$OUTDIR/$projid/aggregate
+	aggdir=$outdir/$projid/aggregate
 	mkdir -p \$aggdir
-	cp ${sid}/outs/molecule_info.h5 ${OUTDIR}/${projid}/aggregate/${sid}.molecule_info.h5
+	cp ${sid}/outs/molecule_info.h5 ${outdir}/${projid}/aggregate/${sid}.molecule_info.h5
 
 	## Copy metrics file for qc
 	# Remove if it exists
-	if [ -f ${OUTDIR}/${projid}/qc/cellranger/${sid}.metrics_summary.csv ]; then
-	    rm -r ${OUTDIR}/${projid}/qc/cellranger/${sid}.metrics_summary.csv
+	if [ -f ${outdir}/${projid}/qc/cellranger/${sid}.metrics_summary.csv ]; then
+	    rm -r ${outdir}/${projid}/qc/cellranger/${sid}.metrics_summary.csv
 	fi
-	mkdir -p ${OUTDIR}/${projid}/qc/
-	mkdir -p ${OUTDIR}/${projid}/qc/cellranger/
+	mkdir -p ${outdir}/${projid}/qc/
+	mkdir -p ${outdir}/${projid}/qc/cellranger/
 
-        cp ${sid}/outs/metrics_summary.csv ${OUTDIR}/${projid}/qc/cellranger/${sid}.metrics_summary.csv
+        cp ${sid}/outs/metrics_summary.csv ${outdir}/${projid}/qc/cellranger/${sid}.metrics_summary.csv
 
 	## Copy to delivery folder 
-        cp ${sid}/outs/web_summary.html ${OUTDIR}/${projid}/summaries/web-summaries/${sid}.web_summary.html
-        cp ${sid}/outs/cloupe.cloupe ${OUTDIR}/${projid}/summaries/cloupe/${sid}_cloupe.cloupe
+        cp ${sid}/outs/web_summary.html ${outdir}/${projid}/summaries/web-summaries/${sid}.web_summary.html
+        cp ${sid}/outs/cloupe.cloupe ${outdir}/${projid}/summaries/cloupe/${sid}_cloupe.cloupe
 
 	## Copy to CTG QC dir 
-        cp ${sid}/outs/web_summary.html ${CTGQC}/${projid}/web-summaries/${sid}.web_summary.html
+        cp ${sid}/outs/web_summary.html ${ctgqc}/${projid}/web-summaries/${sid}.web_summary.html
 
 	"""
 
@@ -291,11 +256,11 @@ process fastqc {
 
 	"""
 
-        mkdir -p ${OUTDIR}/${projid}/qc
-        mkdir -p ${OUTDIR}/${projid}/qc/fastqc
+        mkdir -p ${outdir}/${projid}/qc
+        mkdir -p ${outdir}/${projid}/qc/fastqc
 
-        for file in ${OUTDIR}/${projid}/fastq/${sid}/*fastq.gz
-            do fastqc -t ${task.cpus} \$file --outdir=${OUTDIR}/${projid}/qc/fastqc
+        for file in ${outdir}/${projid}/fastq/${sid}/*fastq.gz
+            do fastqc -t ${task.cpus} \$file --outdir=${outdir}/${projid}/qc/fastqc
         done
 	"""
     
@@ -315,16 +280,15 @@ process summarize_count {
 
 	"""
 
-	cd $OUTDIR/$projid
-	mkdir -p ${OUTDIR}/${projid}/
-	mkdir -p ${OUTDIR}/${projid}/qc
-	mkdir -p ${OUTDIR}/${projid}/qc/cellranger
+	cd $outdir/$projid
+	mkdir -p ${outdir}/${projid}/
+	mkdir -p ${outdir}/${projid}/qc
+	mkdir -p ${outdir}/${projid}/qc/cellranger
 	
-	python $basedir/bin/ctg-sc-count-metrics-concat.py -i ${OUTDIR}/${projid}/ -o ${OUTDIR}/${projid}/qc/cellranger
+	python $basedir/bin/ctg-sc-count-metrics-concat.py -i ${outdir}/${projid}/ -o ${outdir}/${projid}/qc/cellranger
 
 	# Copy to summaries delivery folder
-	cp ${OUTDIR}/${projid}/qc/cellranger/ctg-cellranger-count-summary_metrics.csv ${OUTDIR}/${projid}/summaries/web-summaries/
-
+	cp ${outdir}/${projid}/qc/cellranger/ctg-cellranger-count-summary_metrics.csv ${outdir}/${projid}/summaries/web-summaries/
 	"""
 }
 	
@@ -342,20 +306,20 @@ process multiqc {
     script:
     """
     
-    cd $OUTDIR/$projid
-    multiqc -f ${OUTDIR}/$projid -f --outdir ${OUTDIR}/$projid/qc/multiqc/ -n ${projid}_multiqc_report.html
+    cd $outdir/$projid
+    multiqc -f ${outdir}/$projid  --outdir ${outdir}/$projid/qc/multiqc/ -n ${projid}_multiqc_report.html
 
-    mkdir -p ${CTGQC}
-    mkdir -p ${CTGQC}/$projid
+    mkdir -p ${ctgqc}
+    mkdir -p ${ctgqc}/$projid
 
-    cp -r ${OUTDIR}/$projid/qc ${CTGQC}/$projid/
+    cp -r ${outdir}/$projid/qc ${ctgqc}/$projid/
 
     """
 }
 
 process multiqc_count_run {
 
-    tag "${metaID}"
+    tag "${metaid}"
 
     input:
     val x from run_summarize.collect()
@@ -364,8 +328,8 @@ process multiqc_count_run {
     val "x" into summarized
 
     """
-    cd $OUTDIR 
-    multiqc -f ${FQDIR} ${OUTDIR}/*/qc/cellranger/ --outdir ${CTGQC} -n ${metaID}_run_sc-rna-10x_summary_multiqc_report.html
+    cd $outdir 
+    multiqc -f ${fqdir} ${outdir}/*/qc/cellranger/ --outdir ${ctgqc} -n ${metaid}_run_sc-rna-10x_summary_multiqc_report.html
 
     """
 
@@ -383,33 +347,34 @@ process gen_aggCSV {
     val projid into craggregate
 
     """
-    
-    aggdir=$OUTDIR/$projid/aggregate
-
+#if only one sample / project - do not aggregate
+samples=\$(grep $projid $sheet | wc -l )
+if [ \$samples == 1 ]; then
+    echo 'only one sample in project $projid. no aggregation '
+else 
+    aggdir=$outdir/$projid/aggregate
     mkdir -p \$aggdir
-
     aggcsv=\$aggdir/${projid}_libraries.csv
-
     if [ -f \$aggcsv ]
     then
         if grep -q $sid \$aggcsv
         then
              echo ""
         else
-             echo "${sid},${OUTDIR}/${projid}/aggregate/${sid}.molecule_info.h5" >> \$aggcsv
+             echo "${sid},${outdir}/${projid}/aggregate/${sid}.molecule_info.h5" >> \$aggcsv
         fi
     else
         echo "sample_id,molecule_h5" > \$aggcsv
-        echo "${sid},${OUTDIR}/${projid}/aggregate/${sid}.molecule_info.h5" >> \$aggcsv
+        echo "${sid},${outdir}/${projid}/aggregate/${sid}.molecule_info.h5" >> \$aggcsv
     fi
-
+fi
 
     """
 }
 
 process aggregate {
 
-    publishDir "${OUTDIR}/${projid}/aggregate/", mode: 'move', overwrite: true
+    publishDir "${outdir}/${projid}/aggregate/", mode: 'move', overwrite: true
     tag "$projid"
   
     input:
@@ -422,8 +387,12 @@ process aggregate {
     val "x" into md5_wait
 
     """
-
-    aggdir="$OUTDIR/$projid/aggregate"
+#if only one sample / project - do not aggregate
+samples=\$(grep $projid $sheet | wc -l )
+if [ \$samples == 1 ]; then
+    echo 'only one sample in project $projid. no aggregation'
+else     
+    aggdir="$outdir/$projid/aggregate"
 
     cellranger aggr \
        --id=${projid}_agg \
@@ -431,16 +400,17 @@ process aggregate {
        --normalize=mapped
 
     ## Copy to delivery folder 
-    cp ${projid}_agg/outs/web_summary.html ${OUTDIR}/${projid}/summaries/web-summaries/${projid}_agg.web_summary.html
-    cp ${projid}_agg/outs/count/cloupe.cloupe ${OUTDIR}/${projid}/summaries/cloupe/${projid}_agg_cloupe.cloupe
+    cp ${projid}_agg/outs/web_summary.html ${outdir}/${projid}/summaries/web-summaries/${projid}_agg.web_summary.html
+    cp ${projid}_agg/outs/count/cloupe.cloupe ${outdir}/${projid}/summaries/cloupe/${projid}_agg_cloupe.cloupe
     
     ## Copy to CTG QC dir 
-    cp ${OUTDIR}/${projid}/summaries/web-summaries/${projid}_agg.web_summary.html ${CTGQC}/${projid}/web-summaries/
-    cp ${OUTDIR}/${projid}/summaries/cloupe/${projid}_agg_cloupe.cloupe ${CTGQC}/${projid}/web-summaries/
+    cp ${outdir}/${projid}/summaries/web-summaries/${projid}_agg.web_summary.html ${ctgqc}/${projid}/web-summaries/
+    cp ${outdir}/${projid}/summaries/cloupe/${projid}_agg_cloupe.cloupe ${ctgqc}/${projid}/web-summaries/
 
     ## Remove the molecule_info.h5 files that are stored in the aggregate folder (the original files are still in count-cr/../outs 
-    rm ${OUTDIR}/${projid}/aggregate/*h5
+    rm ${outdir}/${projid}/aggregate/*h5
 
+fi
     """
 
 }
@@ -452,7 +422,7 @@ process md5sum {
 	val x from md5_wait.collect()
 	
 	"""
-	cd ${OUTDIR}/${projid}/
+	cd ${outdir}/${projid}/
 	find -type f -exec md5sum '{}' \\; > ctg-md5.${projid}.txt
         """ 
 
