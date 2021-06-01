@@ -48,7 +48,7 @@ println "============================="
 Channel
     .fromPath(sheet)
     .splitCsv(header:true)
-    .map { row -> tuple( row.Sample_ID, row.Sample_Project, row.Sample_Species, row.nuclei) }
+    .map { row -> tuple( row.Sample_ID, row.Sample_Project, row.Sample_Species, row.agg, row.nuclei) }
     .tap{infoall}
     .into { crCount_csv; cragg_ch; mvfastq_csv }
 
@@ -70,7 +70,7 @@ if ( demux == 'n' ) {
 }
 
 println " > Samples to process: "
-println "[Sample_ID,Sample_Name,Sample_Project,Sample_Species,nuclei]"
+println "[Sample_ID,Sample_Name,Sample_Project,Sample_Species,agg,nuclei]"
 infoall.subscribe { println "Info: $it" }
 
 println " > Projects to process : "
@@ -132,11 +132,11 @@ process moveFastq {
 
     input:
     val x from moveFastq
-    set sid, projid, ref, nuclei from mvfastq_csv
+    set sid, projid, ref, agg, nuclei from mvfastq_csv
 
     output:
     val "y" into crCount
-    set sid, projid, ref, nuclei into fqc_ch
+    set sid, projid, ref, agg, nuclei into fqc_ch
 
     when:
     demux = 'y'
@@ -164,7 +164,7 @@ process count {
 	input: 
 	val sheet
 	val y from crCount.collect()
-        set sid, projid, ref, nuclei from crCount_csv
+        set sid, projid, ref, agg, nuclei from crCount_csv
 
 	output:
         file "${sid}/outs/" into samplename
@@ -248,7 +248,7 @@ process fastqc {
 	tag "${sid}-${projid}"
 
 	input:
-	set sid, projid, ref, nuclei from fqc_ch	
+	set sid, projid, ref, agg, nuclei from fqc_ch	
         
         output:
         val projid into mqc_cha
@@ -341,17 +341,15 @@ process gen_aggCSV {
     tag "${sid}_${projid}"
 
     input:
-    set sid, projid, ref, nuclei from cragg_ch
+    set sid, projid, ref, agg, nuclei from cragg_ch
 
     output:
-    val projid into craggregate
+    set agg, projid into craggregate
+
+    when:
+    agg == 'y'
 
     """
-#if only one sample / project - do not aggregate
-samples=\$(grep $projid $sheet | wc -l )
-if [ \$samples == 1 ]; then
-    echo 'only one sample in project $projid. no aggregation '
-else 
     aggdir=$outdir/$projid/aggregate
     mkdir -p \$aggdir
     aggcsv=\$aggdir/${projid}_libraries.csv
@@ -367,7 +365,6 @@ else
         echo "sample_id,molecule_h5" > \$aggcsv
         echo "${sid},${outdir}/${projid}/aggregate/${sid}.molecule_info.h5" >> \$aggcsv
     fi
-fi
 
     """
 }
@@ -378,7 +375,7 @@ process aggregate {
     tag "$projid"
   
     input:
-    val projid from craggregate.unique()
+    set agg, projid from craggregate.unique()
     val moleculeinfo from count_agg.collect()
 
     output:
@@ -386,12 +383,10 @@ process aggregate {
     val projid into md5_proj
     val "x" into md5_wait
 
+    when:
+    agg == 'y'
+
     """
-#if only one sample / project - do not aggregate
-samples=\$(grep $projid $sheet | wc -l )
-if [ \$samples == 1 ]; then
-    echo 'only one sample in project $projid. no aggregation'
-else     
     aggdir="$outdir/$projid/aggregate"
 
     cellranger aggr \
@@ -410,7 +405,6 @@ else
     ## Remove the molecule_info.h5 files that are stored in the aggregate folder (the original files are still in count-cr/../outs 
     rm ${outdir}/${projid}/aggregate/*h5
 
-fi
     """
 
 }
