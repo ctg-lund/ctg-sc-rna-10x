@@ -32,6 +32,8 @@ def main(argv):
     out1 = outputdir + "/ctg-cellranger-count-summary_metrics.csv"
     out2 = outputdir + "/cellranger-count_summary_metrics_mqc.csv"
 
+    projid=os.path.basename(os.path.normpath(projdir))
+
     # list all metricsfiles
     samples = os.listdir(projdir + '/count-cr/')
 
@@ -39,13 +41,13 @@ def main(argv):
     sname = samples[0]
     fname = projdir + "/qc/cellranger/" + sname + ".metrics_summary.csv"
     final = pd.read_csv(fname)
-    final.index = [sname]
+    final.index = [projid + "-" + sname]
 
     # concatenate all sample tables to one
     for sname in samples[1:]:
         fname = projdir + "/qc/cellranger/" + sname + ".metrics_summary.csv"
         data = pd.read_csv(fname)
-        data.index = [sname]
+        data.index = [projid + "-" + sname]
         final = pd.concat([final,data],axis=0)
     
     # Write csv file        
@@ -98,7 +100,7 @@ def main(argv):
     f.write("# headers:\n")
     f.write("#     col1:\n")
     f.write("#         title: 'Sample'\n")
-    f.write("#         description: 'Sample ID'\n")
+    f.write("#         description: 'CTG Project ID - Sample ID'\n")
     f.write("#     col2:\n")
     f.write("#         title: 'Estimated Number of Cells'\n")
     f.write("#         description: 'Estimated number of cells'\n")
