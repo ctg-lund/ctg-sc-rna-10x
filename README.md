@@ -26,7 +26,7 @@ Cellranger version: cellranger v6.0
 * `Demultiplexing` (cellranger mkfastq): Converts raw basecalls to fastq, and demultiplex samples based on index (https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/6.0/using/mkfastq).
 * `FastQC`: FastQC calculates quality metrics on raw sequencing reads (https://www.bioinformatics.babraham.ac.uk/projects/fastqc/). MultiQC summarizes FastQC reports into one document (https://multiqc.info/).
 * `Align` + `Counts` (cellranger count): Aligns fastq files to reference genome, counts genes for each cell/barcode, perform secondary analysis such as clustering and generates the cloupe files (https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/6.0/using/count).
-* `Aggregation` (cellranger aggr): Automatically creates the input csv pointing to molecule_info.h5 files for each sample to be aggregated and executes aggregation (https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/aggregate). 
+* `Aggregation` (cellranger aggr): Automatically creates the input csv pointing to molecule_info.h5 files for each sample to be aggregated and executes aggregation (https://support.10xgenomics.com/single-cell-gene-expression/software/pipelines/latest/using/aggregate). This is only run if there is more than one sample pr project.
 * `Cellranger count metrics` (bin/ctg-sc-count-metrics-concat.py): Collects main count metrics (#cells and #reads/cell etc.) from each sample and collect in table
 * `multiQC`: Compile fastQC and cellranger count metrics in multiqc report
 * `md5sum`: md5sum of all generated files
@@ -44,7 +44,7 @@ Cellranger version: cellranger v6.0
         * web-summary files which provide an overview of essential metrics from the 10x run. 
         * cloupe files which can be used to explore the data interactively in the Loupe browser (https://support.10xgenomics.com/single-cell-gene-expression/software/visualization/latest/what-is-loupe-cell-browser)  
     * `aggregate`:
-        * Output from cellranger aggregation. 
+        * Output from cellranger aggregation. This is only run if there is more than one sample pr project.
     * `ctg-md5.PROJ_ID.txt`: text file with md5sum recursively from output dir root    
 
 
