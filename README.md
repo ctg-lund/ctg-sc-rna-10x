@@ -52,12 +52,12 @@ Cellranger version: cellranger v6.0
 
 Note: no header! only the rows shown below, starting with the column names.
 
- | Sample_ID | Sample_Name | index | Sample_Project | Sample_Species | agg | nuclei | 
- | --- | --- | --- | --- | --- | --- | --- | 
- | Si1 | Sn1 | SI-GA-D9 | proj_2021_012 | human | y | n | 
- | Si2 | Sn2 | SI-GA-H9 | proj_2021_012 | human | y | n | 
- | Sample1 | S1 | SI-GA-C9 | proj_2021_013 | mouse | n | y | 
- | Sample2 | S23 | SI-GA-C9 | proj_2021_013 | mouse | n | y |
+ | Sample_ID | Sample_Name | index | Sample_Project | Sample_Species | nuclei | 
+ | --- | --- | --- | --- | --- | --- | 
+ | Si1 | Sn1 | SI-GA-D9 | proj_2021_012 | human | y | 
+ | Si2 | Sn2 | SI-GA-H9 | proj_2021_012 | human | y | 
+ | Sample1 | S1 | SI-GA-C9 | proj_2021_013 | mouse | n | 
+ | Sample2 | S23 | SI-GA-C9 | proj_2021_013 | mouse | n |
 
 ```
 
@@ -82,10 +82,10 @@ If custom genome (not hg38 or mm10) is used
 1. Set "Sample_Species" column to 'custom' in samplesheet:
 
 Example:
- | Sample_ID | Sample_Name | index | Sample_Project | Sample_Species | agg | nuclei | 
+ | Sample_ID | Sample_Name | index | Sample_Project | Sample_Species | nuclei | 
  | --- | --- | --- | --- | --- | --- | --- | 
- | Si1 | Sn1 | SI-GA-D9 | proj_2021_012 | **custom** | y | n | 
- | Si2 | Sn2 | SI-GA-H9 | proj_2021_012 | **custom** | y | n | 
+ | Si1 | Sn1 | SI-GA-D9 | proj_2021_012 | **custom** | y | 
+ | Si2 | Sn2 | SI-GA-H9 | proj_2021_012 | **custom** | y |  
  
  2. In nextflow.config, set 
  `custom_genome=/PATH/TO/CUSTOMGENOME`
