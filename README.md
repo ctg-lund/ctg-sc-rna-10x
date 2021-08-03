@@ -7,12 +7,12 @@
 
 ## USAGE
 
-1. Clone and build the Singularity container for this pipeline: https://github.com/perllb/ctg-sc-adt-rna-10x/tree/master/container/sc-adt-rna-10x.v6
+1. Clone and build the Singularity container for this pipeline: https://github.com/perllb/ctg-sc-rna-10x/tree/master/container/sc-rna-10x.v6
 2. Edit your samplesheet to match the example samplesheet. See section `SampleSheet` below
 3. Edit the nextflow.config file to fit your project and system. 
 4. Run pipeline 
 ```
-nohup nextflow run pipe-sc-adt-rna-10x.nf > log.pipe-sc-adt-rna-10x.txt &
+nohup nextflow run pipe-sc-rna-10x.nf > log.pipe-sc-rna-10x.txt &
 ```
 
 ## Input
