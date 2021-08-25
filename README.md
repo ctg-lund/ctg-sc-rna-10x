@@ -42,7 +42,7 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 - `nuclei` : Set to 'y' if the sample is nuclei, otherwise 'n'. 
 ```
 
-### Samplesheet .csv template
+### Samplesheet template (.csv)
 
 #### Name : `CTG_SampleSheet.sc-rna.10x.csv`
 ```
