@@ -18,7 +18,8 @@ nohup nextflow run pipe-sc-rna-10x.nf > log.pipe-sc-rna-10x.txt &
 ## Input Files
 
 The following files must be in the runfolder to start pipeline successfully.
-1 - Samplesheet (CTG_SampleSheet.sc-rna.10x.csv)
+
+1. Samplesheet (CTG_SampleSheet.sc-rna.10x.csv)
 
 ### Samplesheet requirements:
 
