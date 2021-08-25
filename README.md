@@ -46,11 +46,11 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 
 #### Name : `CTG_SampleSheet.sc-rna-10x.csv`
 ```
-Sample_ID,index,Sample_Project,Sample_Species,Sample_Lib,Sample_Pair
-Si1,Sn1,SI-GA-D9,2021_012,human,rna,1
-Si2,Sn2,SI-GA-H9,2021_012,human,rna,2
-Sample1,S1,SI-GA-C9,2021_013,mouse,atac,1
-Sample2,S23,SI-GA-C9,2021_013,mouse,atac,2
+Sample_ID,index,Sample_Project,Sample_Species,nuclei
+Si1,Sn1,SI-GA-D9,2021_012,human,y
+Si2,Sn2,SI-GA-H9,2021_012,human,y
+Sample3,S3_1,SI-GA-C9,2021_013,mouse,y
+Sample4,S2_3,SI-GA-C9,2021_013,mouse,n
 ``` 
 
 
