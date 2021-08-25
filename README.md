@@ -44,7 +44,7 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 
 ### Samplesheet template (.csv)
 
-#### Name : `CTG_SampleSheet.sc-rna.10x.csv`
+#### Name : `CTG_SampleSheet.sc-rna-10x.csv`
 ```
 Sample_ID,index,Sample_Project,Sample_Species,Sample_Lib,Sample_Pair
 Si1,Sn1,SI-GA-D9,2021_012,human,rna,1
