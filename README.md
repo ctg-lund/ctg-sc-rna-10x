@@ -17,9 +17,44 @@ nohup nextflow run pipe-sc-rna-10x.nf > log.pipe-sc-rna-10x.txt &
 
 ## Input
 
-- Samplesheet (see `SampleSheet` section below)
+- Samplesheet (CTG_SampleSheet.sc-rna.10x.csv)
 
-### Pipeline steps:
+### Samplesheet requirements:
+
+Note: no header! only the rows shown below, starting with the column names.
+Note: Must be in comma-separated values format (.csv)
+
+ | Sample_ID | index | Sample_Project | Sample_Species | nuclei | 
+ | --- | --- | --- | --- | --- | 
+ | Si1 | SI-GA-D9 | proj_2021_012 | human | y | 
+ | Si2 | SI-GA-H9 | proj_2021_012 | human | y | 
+ | Sample1 | SI-GA-C9 | proj_2021_013 | mouse | n | 
+ | Sample2 | SI-GA-C9 | proj_2021_013 | mouse | n |
+
+```
+
+The nf-pipeline takes the following Columns from samplesheet to use in channels:
+
+- `Sample_ID` : ID of sample. Sample_ID can only contain a-z, A-Z and "_".  E.g space and hyphen ("-") are not allowed! If 'Sample_Name' is present, it will be ignored. 
+- `index` : Must use index ID (10x ID) if dual index. For single index, the index sequence works too.
+- `Sample_Project` : Project ID. E.g. 2021_033, 2021_192.
+- `Sample_Species` : Only 'human'/'mouse'/'custom' are accepted. If species is not human or mouse, set 'custom'. This custom reference genome has to be specified in the nextflow config file. See below how to edit the config file.
+- `nuclei` : Set to 'y' if the sample is nuclei, otherwise 'n'. 
+```
+
+### CSV format templates
+
+#### 1. Samplesheet (CTG_SampleSheet.sc-arc-10x.csv)
+```
+Sample_ID,index,Sample_Project,Sample_Species,Sample_Lib,Sample_Pair
+Si1,Sn1,SI-GA-D9,2021_012,human,rna,1
+Si2,Sn2,SI-GA-H9,2021_012,human,rna,2
+Sample1,S1,SI-GA-C9,2021_013,mouse,atac,1
+Sample2,S23,SI-GA-C9,2021_013,mouse,atac,2
+``` 
+
+
+## Pipeline steps:
 
 Cellranger version: cellranger v6.0 
 
@@ -32,7 +67,7 @@ Cellranger version: cellranger v6.0
 * `md5sum`: md5sum of all generated files
 
 
-### Output:
+## Output:
 * ctg-PROJ_ID-output
     * `qc`: Quality control output. 
         * cellranger metrics: Main metrics summarising the count / cell output 
@@ -48,34 +83,10 @@ Cellranger version: cellranger v6.0
     * `ctg-md5.PROJ_ID.txt`: text file with md5sum recursively from output dir root    
 
 
-### Samplesheet requirements:
-
-Note: no header! only the rows shown below, starting with the column names.
-
- | Sample_ID | Sample_Name | index | Sample_Project | Sample_Species | nuclei | 
- | --- | --- | --- | --- | --- | --- | 
- | Si1 | Sn1 | SI-GA-D9 | proj_2021_012 | human | y | 
- | Si2 | Sn2 | SI-GA-H9 | proj_2021_012 | human | y | 
- | Sample1 | S1 | SI-GA-C9 | proj_2021_013 | mouse | n | 
- | Sample2 | S23 | SI-GA-C9 | proj_2021_013 | mouse | n |
-
-```
-
-The nf-pipeline takes the following Columns from samplesheet to use in channels:
-
-- `Sample_ID` ('Sample_Name' will be ignored)
-- `Index` (Must use index ID!)
-- `Sample_Project` (Project ID)
-- `Sample_Species` (human/mouse/custom - if custom, see below how to edit the config file)
-- `agg` ('y' if the sample should be aggregated with other samples of the same Sample_Project that also have 'y' agg)
-- `nuclei` ('y' if the sample is nuclei) 
-```
-
-
-### Container
+## Container
 https://github.com/perllb/ctg-containers/tree/main/sc-rna-10x/sc-rna-10x.v6
 
-### Custom genome 
+## Custom genome 
 
 If custom genome (not hg38 or mm10) is used
 
@@ -90,7 +101,7 @@ Example:
  2. In nextflow.config, set 
  `custom_genome=/PATH/TO/CUSTOMGENOME`
  
-### Add custom genes (e.g. reporters) to cellranger annotation
+## Add custom genes (e.g. reporters) to cellranger annotation
 
 You can use this script to add custom genes to the cellranger ref
 https://github.com/perllb/ctg-cellranger-add2ref
