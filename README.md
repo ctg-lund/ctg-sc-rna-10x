@@ -15,7 +15,7 @@
 nohup nextflow run pipe-sc-rna-10x.nf > log.pipe-sc-rna-10x.txt &
 ```
 
-## Input
+## Input Files
 
 - Samplesheet (CTG_SampleSheet.sc-rna.10x.csv)
 
