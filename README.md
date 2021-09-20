@@ -33,6 +33,12 @@ Note: Must be in comma-separated values format (.csv)
  | Sample1 | SI-GA-C9 | proj_2021_013 | mouse | n | 
  | Sample2 | SI-GA-C9 | proj_2021_013 | mouse | n |
 
+- Lane can also be specified if needed:
+ | Lane | Sample_ID | index | Sample_Project | Sample_Species | nuclei | 
+ | --- | --- | --- | --- | --- | --- | 
+ | 1 | Si1 | SI-GA-D9 | proj_2021_012 | human | y | 
+ | 1 | Si2 | SI-GA-H9 | proj_2021_012 | human | y | 
+
 ```
 
 The nf-pipeline takes the following Columns from samplesheet to use in channels:
