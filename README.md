@@ -23,15 +23,18 @@ The following files must be in the runfolder to start pipeline successfully.
 
 ### Samplesheet requirements:
 
-Note: no header! only the rows shown below, starting with the column names.
+Note: One samplesheet pr project!
 Note: Must be in comma-separated values format (.csv)
 
- | Sample_ID | index | Sample_Project | Sample_Species | nuclei | 
+| [Header] | , | , | , | , | 
+| --- | --- | --- | --- | --- |
+| ProjectID | 2021_021 | , | , | , | 
+| [Data] | , | , | , | , | 
+| **Sample_ID** | **index** | **Sample_Project** | **Sample_Species** | **nuclei** | 
  | --- | --- | --- | --- | --- | 
  | Si1 | SI-GA-D9 | proj_2021_012 | human | y | 
  | Si2 | SI-GA-H9 | proj_2021_012 | human | y | 
- | Sample1 | SI-GA-C9 | proj_2021_013 | mouse | n | 
- | Sample2 | SI-GA-C9 | proj_2021_013 | mouse | n |
+
 
 - Lane can also be specified if needed:
 
@@ -55,11 +58,12 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 
 #### Name : `CTG_SampleSheet.sc-rna-10x.csv`
 ```
+[Header]
+ProjectID,2021_012,
+[Data]
 Sample_ID,index,Sample_Project,Sample_Species,nuclei
 Si1,Sn1,SI-GA-D9,2021_012,human,y
 Si2,Sn2,SI-GA-H9,2021_012,human,y
-Sample3,S3_1,SI-GA-C9,2021_013,mouse,y
-Sample4,S2_3,SI-GA-C9,2021_013,mouse,n
 ``` 
 
 
