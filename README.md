@@ -102,8 +102,9 @@ If custom genome (not hg38 or mm10) is used
 1. Set "Sample_Species" column to 'custom' in samplesheet:
 
 Example:
+
  | Sample_ID | Sample_Name | index | Sample_Project | Sample_Species | nuclei | 
- | --- | --- | --- | --- | --- | --- | --- | 
+ | --- | --- | --- | --- | --- | --- | 
  | Si1 | Sn1 | SI-GA-D9 | proj_2021_012 | **custom** | y | 
  | Si2 | Sn2 | SI-GA-H9 | proj_2021_012 | **custom** | y |  
  
