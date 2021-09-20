@@ -34,6 +34,7 @@ Note: Must be in comma-separated values format (.csv)
  | Sample2 | SI-GA-C9 | proj_2021_013 | mouse | n |
 
 - Lane can also be specified if needed:
+
  | Lane | Sample_ID | index | Sample_Project | Sample_Species | nuclei | 
  | --- | --- | --- | --- | --- | --- | 
  | 1 | Si1 | SI-GA-D9 | proj_2021_012 | human | y | 
@@ -48,6 +49,7 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 - `Sample_Project` : Project ID. E.g. 2021_033, 2021_192.
 - `Sample_Species` : Only 'human'/'mouse'/'custom' are accepted. If species is not human or mouse, set 'custom'. This custom reference genome has to be specified in the nextflow config file. See below how to edit the config file.
 - `nuclei` : Set to 'y' if the sample is nuclei, otherwise 'n'. 
+- `Lane` : Only needed to add if you actually sequence the project on a specific lane. Else, this column can be omitted. 
 ```
 
 ### Samplesheet template (.csv)
