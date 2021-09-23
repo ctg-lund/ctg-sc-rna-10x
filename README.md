@@ -31,7 +31,6 @@ Note: Must be in comma-separated values format (.csv)
 | ProjectID | 2021_021 | , | , | , | 
 | [Data] | , | , | , | , | 
 | **Sample_ID** | **index** | **Sample_Project** | **Sample_Species** | **nuclei** | 
- | --- | --- | --- | --- | --- | 
  | Si1 | SI-GA-D9 | proj_2021_012 | human | y | 
  | Si2 | SI-GA-H9 | proj_2021_012 | human | y | 
 
