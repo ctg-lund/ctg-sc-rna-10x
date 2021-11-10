@@ -7,7 +7,6 @@ metaid = params.metaid
 
 // Output dirs
 outdir = params.outdir
-outmeta = params.outmeta
 fqdir = params.fqdir
 ctgqc = params.ctgqc
 
@@ -36,7 +35,6 @@ println "> index                : $index "
 println ""
 println "> - output directories "
 println "> output-dir           : $outdir "
-println "> output-meta          : $outmeta "
 println "> fastq-dir            : $fqdir "
 println "> ctg-qc-dir           : $ctgqc "
 println "============================="
@@ -63,7 +61,7 @@ for ( line in all_lines ) {
 Channel
     .fromPath(chsheet)
     .splitCsv(header:true)
-    .map { row -> tuple( row.Sample_ID, row.Sample_Project, row.Sample_Species, row.nuclei) }
+    .map { row -> tuple( row.Sample_ID, row.Sample_Project, row.Sample_Species, row.nuclei, row.expcells) }
     .tap{infoall}
     .into { crCount_csv; cragg_ch; mvfastq_csv }
 
@@ -77,7 +75,7 @@ Channel
     .into { count_summarize; mqc_cha_init_uniq }
 
 println " > Samples to process: "
-println "[Sample_ID,Sample_Name,Sample_Project,Sample_Species,nuclei]"
+println "[Sample_ID,Sample_Name,Sample_Project,Sample_Species,nuclei,expcells]"
 infoall.subscribe { println "Info: $it" }
 
 println " > Projects to process : "
@@ -147,11 +145,11 @@ process moveFastq {
 
     input:
     val x from moveFastq
-    set sid, projid, ref, nuclei from mvfastq_csv
+    set sid, projid, ref, nuclei, expcells from mvfastq_csv
 
     output:
     val "y" into crCount
-    set sid, projid, ref, nuclei into fqc_ch
+    set sid, projid, ref, nuclei, expcells into fqc_ch
 
     when:
     demux = 'y'
@@ -179,7 +177,7 @@ process count {
 	input: 
 	val sheet
 	val y from crCount.collect()
-        set sid, projid, ref, nuclei from crCount_csv
+        set sid, projid, ref, nuclei, expcells from crCount_csv
 
 	output:
         file "${sid}/outs/" into samplename
@@ -212,7 +210,8 @@ process count {
 	     --include-introns \\
              --project=$projid \\
 	     --transcriptome=\$genome \\
-             --localcores=20 --localmem=128 
+             --localcores=20 --localmem=110 \\
+	     --force-cells $expcells
 	else
 		cellranger count \\
 	     --id=$sid \\
@@ -220,7 +219,8 @@ process count {
 	     --sample=$sid \\
              --project=$projid \\
 	     --transcriptome=\$genome \\
-             --localcores=20 --localmem=128 
+             --localcores=20 --localmem=110 \\
+	     --force-cells $expcells
 	fi
 
         mkdir -p ${outdir}
@@ -263,7 +263,7 @@ process fastqc {
 	tag "${sid}-${projid}"
 
 	input:
-	set sid, projid, ref, nuclei from fqc_ch	
+	set sid, projid, ref, nuclei, expcells from fqc_ch	
         
         output:
         val projid into mqc_cha
@@ -344,7 +344,7 @@ process multiqc_count_run {
 
     """
     cd $outdir 
-    multiqc -f ${fqdir} ${outdir}/*/qc/cellranger/ --outdir ${ctgqc}/${metaid}/ -n ${metaid}_run_sc-rna-10x_summary_multiqc_report.html
+    multiqc -f ${fqdir} ${outdir}/*/qc/cellranger/ --outdir ${ctgqc} -n ${metaid}_run_sc-rna-10x_summary_multiqc_report.html
 
     """
 
@@ -356,10 +356,11 @@ process gen_aggCSV {
     tag "${sid}_${projid}"
 
     input:
-    set sid, projid, ref, nuclei from cragg_ch
+    set sid, projid, ref, nuclei, expcells from cragg_ch
 
     output:
     val projid into craggregate
+
 
     """
     aggdir=$outdir/$projid/aggregate
@@ -371,12 +372,10 @@ process gen_aggCSV {
         then
              echo ""
         else
-             sleep 3 
              echo "${sid},${outdir}/${projid}/aggregate/${sid}.molecule_info.h5" >> \$aggcsv
         fi
     else
         echo "sample_id,molecule_h5" > \$aggcsv
-	sleep 2
         echo "${sid},${outdir}/${projid}/aggregate/${sid}.molecule_info.h5" >> \$aggcsv
     fi
 

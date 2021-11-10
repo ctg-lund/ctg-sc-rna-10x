@@ -212,7 +212,7 @@ process count {
 	     --include-introns \\
              --project=$projid \\
 	     --transcriptome=\$genome \\
-             --localcores=20 --localmem=128 
+             --localcores=20 --localmem=110 
 	else
 		cellranger count \\
 	     --id=$sid \\
@@ -220,7 +220,7 @@ process count {
 	     --sample=$sid \\
              --project=$projid \\
 	     --transcriptome=\$genome \\
-             --localcores=20 --localmem=128 
+             --localcores=20 --localmem=110 
 	fi
 
         mkdir -p ${outdir}
@@ -344,7 +344,7 @@ process multiqc_count_run {
 
     """
     cd $outdir 
-    multiqc -f ${fqdir} ${outdir}/*/qc/cellranger/ --outdir ${ctgqc}/${metaid}/ -n ${metaid}_run_sc-rna-10x_summary_multiqc_report.html
+    multiqc -f ${fqdir} ${outdir}/*/qc/cellranger/ --outdir ${ctgqc} -n ${metaid}_run_sc-rna-10x_summary_multiqc_report.html
 
     """
 

@@ -1,0 +1,2 @@
+- Update from v1: 
+  - Force cells

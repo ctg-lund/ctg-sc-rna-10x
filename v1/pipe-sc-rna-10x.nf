@@ -212,7 +212,7 @@ process count {
 	     --include-introns \\
              --project=$projid \\
 	     --transcriptome=\$genome \\
-             --localcores=20 --localmem=128 
+             --localcores=20 --localmem=110 
 	else
 		cellranger count \\
 	     --id=$sid \\
@@ -220,7 +220,7 @@ process count {
 	     --sample=$sid \\
              --project=$projid \\
 	     --transcriptome=\$genome \\
-             --localcores=20 --localmem=128 
+             --localcores=20 --localmem=110 
 	fi
 
         mkdir -p ${outdir}

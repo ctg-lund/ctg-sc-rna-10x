@@ -31,12 +31,9 @@ def main(argv):
         elif opt in ("-p", "--pipeline"):
             pipeline = arg
 
-    print("Outdir: " + outputdir)
-    print("Indir: " + projdir)
     out1 = outputdir + "/ctg-cellranger-count-summary_metrics.csv"
     out2 = outputdir + "/cellranger-count_summary_metrics_mqc.csv"
-    print("Outfile - csv: " + out1)
-    print("Outfile - mqc: " + out2)
+
     projid=os.path.basename(os.path.normpath(projdir))
 
     # list all metricsfiles
@@ -79,9 +76,9 @@ def main(argv):
         f.write("#         description: '"+col+"'\n")
         #check datatype for formating
         form="na"
-        if "," in str(mqdf[col][0]):
+        if "," in mqdf[col][0]:
             f.write("#         format: '{:.0f}' \n")
-        if "%" in str(mqdf[col][0]):
+        if "%" in mqdf[col][0]:
             f.write("#         min: 0\n")
             f.write("#         max: 100\n")
             f.write("#         format: '{:.1f}'\n")
@@ -102,10 +99,10 @@ def main(argv):
     for rowIndex, row in mqdf.iterrows(): #iterate over rows
         for columnIndex, value in row.items():
             newval=""
-            if "%" in str(value):
+            if "%" in value:
                 newval=value[:-1]
                 outdf.at[rowIndex,columnIndex] = newval
-            if "," in str(value):
+            if "," in value:
                 newval=re.sub(",","",str(value))
                 outdf.at[rowIndex,columnIndex] = newval
     # Write header with format

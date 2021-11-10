@@ -64,7 +64,7 @@ def main(argv):
                     projidx = row.index('Sample_Project')
                 else:
                     if laneidx == 'na':
-                        currlane = ''
+                        currlane = '',
                     else:
                         currlane = row[laneidx]
                     currsid = row[sididx]

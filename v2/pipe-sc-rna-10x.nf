@@ -186,25 +186,26 @@ process count {
         val "${outdir}/${projid}/qc/cellranger/${sid}.metrics_summary.csv" into count_metrics
 	val "${outdir}/${projid}/aggregate/${sid}.molecule_info.h5" into count_agg
 
-	"""
-        if [ $ref == "Human" ] || [ $ref == "human" ]
-        then
-            genome=$params.human
-        elif [ $ref == "mouse" ] || [ $ref == "Mouse" ]
-        then
-            genome=$params.mouse
-        elif [ $ref == "custom"  ] || [ $ref == "Custom" ] 
-        then
-            genome=${params.custom_genome}
-        else
-            echo ">SPECIES NOT RECOGNIZED!"
-            genome="ERR"
-        fi
+	script:
+	if ( ref == "Human" || ref == "human") {
+	   genome=params.human 
+	   }	   
+	else if ( ref == "mouse" || ref == "Mouse") {
+	   genome=params.mouse
+	   }
+	else if ( ref == "custom" || ref == "Custom") {
+	   genone=params.custom_genome
+	   }
+	else {
+	   print ">ERROR: Species not recognized" 
+	   genome="ERR"
+	   }
 
-        mkdir -p ${outdir}/${projid}/count-cr/
+	prcountdir = outdir + projid + "/count-cr/"
+	file(prcountdir).mkdir()   
 
-	if [ $nuclei == "y" ]
-	then
+	if ( nuclei == "y" ) 
+		"""
 		cellranger count \\
 	     --id=$sid \\
 	     --fastqs=${outdir}/$projid/fastq/$sid \\
@@ -213,7 +214,9 @@ process count {
              --project=$projid \\
 	     --transcriptome=\$genome \\
              --localcores=20 --localmem=128 
+	     """
 	else
+	"""
 		cellranger count \\
 	     --id=$sid \\
 	     --fastqs=${outdir}/$projid/fastq/$sid \\
@@ -221,8 +224,9 @@ process count {
              --project=$projid \\
 	     --transcriptome=\$genome \\
              --localcores=20 --localmem=128 
-	fi
+"""
 
+	"""
         mkdir -p ${outdir}
         mkdir -p ${outdir}/${projid}
         mkdir -p ${outdir}/${projid}/summaries

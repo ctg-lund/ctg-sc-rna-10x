@@ -12,22 +12,25 @@
 ###  -> Write pipeline output 
 ### * nf-Pipeline writes qc to shared/ctg-qc/sc-rna-10x
 
+echo "first echo"
 # Initialize variables
 runfolder=$(pwd)
 run=$(basename $runfolder)
 demux="ON"
 resume='n'
 index='dual'
+version='deployed'
 
 # usage message 
 usage() {
 
     echo ""
-    echo "Usage: sc-rna-10x [ -i META_ID ] [ -s SAMPLESHEET ] [ -a INDEX-TYPE ] [ -b BCL2FASTQ-ARG ] [ -r RESUME ] [ -c CUSTOM-GENOME ] [ -d DEMUX-OFF ] [ -h HELP ] "  1>&2
+    echo "Usage: sc-rna-10x [ -v CTG-PIPELINE-VERSION ] [ -i META_ID ] [ -s SAMPLESHEET ] [ -a INDEX-TYPE ] [ -b BCL2FASTQ-ARG ] [ -r RESUME ] [ -c CUSTOM-GENOME ] [ -d DEMUX-OFF ] [ -h HELP ] "  1>&2
     echo ""
     echo ""
     echo "Optional arguments: "
-    echo "META-ID    -i : Set 'meta-id' for runfolder (e.g. 210330-10x). Default: Takes date of runfolder + run ID in runfolder name and adds sc-rna-10x as suffix. E.g. '210330_A00681_0334_AHWFKTDMXX' becomes 210330_0334-sc-rna-10x "
+    echo "VERSION       -v : Set specific version to run of the nextflow pipeline. Default will run current deployed version (in /shared/ctg-pipelines/ctg-sc-rna-10x/. If set to '-r 2' it will run v2, which is in -pipelines/ctg-sc-rna-10x/v2. If -v X it will choose -pipelines/ctg-sc-rna-10x/vX"
+    echo "META-ID       -i : Set 'meta-id' for runfolder (e.g. 210330-10x). Default: Takes date of runfolder + run ID in runfolder name and adds sc-rna-10x as suffix. E.g. '210330_A00681_0334_AHWFKTDMXX' becomes 210330_0334-sc-rna-10x "
     echo "SAMPLESHEET   -s : Set samplesheet used for run (Default: CTG_SampleSheet.sc-rna-10x.csv) "
     echo "INDEX-TYPE    -a : Set -a if single index uses. (Default: dual) "  
     echo "BCL2FASTQ-ARG -b : String with bcl2fastq argument. e.g. '--minimum-trimmed-read-length 20 --mask-short-adapter-reads 20' "
@@ -44,8 +47,10 @@ exit_abnormal() {
 }
 
 # Read and control input arguments 
-while getopts i:s:b:ac:rdh opt; do
+while getopts i:s:v:b:ac:rdh opt; do
     case $opt in
+	v) version=$OPTARG
+	    ;;
 	i) id=$OPTARG
 	    ;;
 	s) sheet=$OPTARG
@@ -72,41 +77,6 @@ done
 ## Check arguments
 shift "$(( OPTIND -1 ))"
 
-# Check meta-id
-if [ -z $id ]; then
-    echo ""; echo "> WARNING! No meta-ID specified"
-    metaid=$(echo $run | cut -f1,3 -d"_")
-    id="${metaid}-sc-rna-10x"
-    echo "- Using: '${id}'"
-fi
-
-# Check if meta-ID already exist
-if [ "$resume" == 'n' ] && [ -d /projects/fs1/shared/ctg-projects/sc-rna-10x/$id ]; then
-    # Prompt user to approve overwriting current sc-rna-10x project-folder
-    read -p "> WARNING: $id has been used before:
-
-The following directories already exist:
-- /projects/fs1/shared/ctg-projects/sc-rna-10x/$id 
-- /projects/fs1/shared/ctg-qc/sc-rna-10x/$id 
-- /projects/fs1/nas-sync/ctg-delivery/sc-rna-10x/$id 
-
-
- Do you want to overwrite these folders? 
-
-(y/n)  ... : " prompt
-    if [[ $prompt != "y" ]]
-    then 
-	echo "> Exiting: Please provide new [ -i metaID ] !"
-	exit_abnormal
-    else
-	echo "> Deleting content of the folders.. "
-	rm -r /projects/fs1/shared/ctg-projects/sc-rna-10x/$id/*
-	rm -r /projects/fs1/shared/ctg-qc/sc-rna-10x/$id/*
-	rm -r /projects/fs1/nas-sync/ctg-delivery/sc-rna-10x/$id/*
-    fi
-else
-    echo "> Resuming project '$id' "
-fi
 # Check samplesheet name
 if [ -z $sheet ]; then
     echo ""; echo "> WARNING! No samplesheet specified"
@@ -119,50 +89,47 @@ if [ -z $sheet ]; then
     fi
 fi
 
-##############
-# Print info #
-##############
-echo ""
-echo "> The following arguments are entered:"
-echo "ID               : $id"
-echo "Runfolder        : $runfolder " 
-echo "Sheet            : $sheet"
-echo "Index-type       : ${index}-index"
-echo "Bcl2fastq arg    : '$b2farg'"
-if [ -z $custom_genome ]; then
-    echo "Custom Genome    : NONE "
-else
-    echo "Custom Genome    : $custom_genome "
-fi
-if [ $demux == "ON" ]; then
-    echo "Demux            : YES "
-else
-    echo "Demux            : NO "
-fi
-if [ $resume == "y" ]; then
-    echo "Resume           : YES "
-else
-    echo "Resume           : NO "
+# Check meta-id - assign project number if not specified
+if [ -z $id ]; then
+    echo "> No meta-ID specified"
+    metaid=$(grep "ProjectID" $sheet | cut -f2 -d"," | tr -d '\n\r')
+    if [ -z $metaid ]; then
+	metaid=$(echo $run | cut -f1,3 -d"_")
+	id="${metaid}-sc-rna-10x"
+    else
+	id="${metaid}"
+    fi
+    echo "- Using: '${id}'"
 fi
 
-echo ""
-echo "Runfolder          : $runfolder "
-echo "Project Logfolder  : /projects/fs1/shared/ctg-projects/sc-rna-10x/$id"
-echo "QC Logfolder       : /projects/fs1/shared/ctg-qc/sc-rna-10x/$id"
-echo "Output             : /projects/fs1/nas-sync/ctg-delivery/sc-rna-10x/$id"
-echo ""
+projdir="/projects/fs1/shared/ctg-projects/sc-rna-10x/$id/"
 
-# Prompt user to approve running in current directory and input
-read -p "> WARNING: Can only be run from within runfolder! 
+# Check if meta-ID already exist
+if [ "$resume" == 'n' ] && [ -d $projdir ]; then
+    # Prompt user to approve overwriting current sc-rna-10x project-folder
+    read -p "> WARNING: $id has been used before:
 
-- Are you in runfolder in which you want run? 
-- And is input described above correct ?  
+The following directories already exist:
+- $projdir
+- /projects/fs1/shared/ctg-qc/sc-rna-10x/$id 
+- /projects/fs1/nas-sync/ctg-delivery/sc-rna-10x/$id 
+
+
+Do you want to overwrite these folders? 
 
 (y/n)  ... : " prompt
-if [[ $prompt != "y" ]]
-then 
-    echo "> Exiting: Go to runfolder!"
-    exit 0
+    if [[ $prompt != "y" ]]
+    then 
+	echo "> Exiting: Please provide new [ -i metaID ] !"
+	exit_abnormal
+    else
+	echo "> Deleting content of the folders.. "
+	rm -r $projdir/*
+	rm -r /projects/fs1/shared/ctg-qc/sc-rna-10x/$id/*
+	rm -r /projects/fs1/nas-sync/ctg-delivery/sc-rna-10x/$id/*
+    fi
+else
+    echo "> Proceeding with project '$id' "
 fi
 
 ################
@@ -170,13 +137,18 @@ fi
 ################
 
 # Creating project dir for logging pipeline
-projdir="/projects/fs1/shared/ctg-projects/sc-rna-10x/$id/"
 mkdir -p $projdir
 
 # Copy nextflow script and config to project folder
-nf_pipe="/projects/fs1/shared/ctg-pipelines/ctg-sc-rna-10x/pipe-sc-rna-10x.nf"
-nf_config="/projects/fs1/shared/ctg-pipelines/ctg-sc-rna-10x/nextflow.config"
-nf_bin="/projects/fs1/shared/ctg-pipelines/ctg-sc-rna-10x/bin/"
+if [ $version == "deployed" ]; then
+    piperoot="/projects/fs1/shared/ctg-pipelines/ctg-sc-rna-10x/"
+else
+    piperoot="/projects/fs1/shared/ctg-pipelines/ctg-sc-rna-10x/v${version}"
+fi
+
+nf_pipe="${piperoot}/pipe-sc-rna-10x.nf"
+nf_config="${piperoot}/nextflow.config"
+nf_bin="${piperoot}/bin/"
 
 cp $nf_pipe $projdir
 cp $nf_config $projdir
@@ -203,6 +175,54 @@ cp $proj_conf $runfolder/$id.nextflow.config
 # Copy samplesheet to project folder (ctg-projects..)
 cp $sheet $projdir
 
+
+##############
+# Print info #
+##############
+echo ""
+echo "> The following arguments are chosen:"
+echo "sc-rna-10x version : $version"  
+echo "Pipeline           : $nf_pipe"
+echo "ID                 : $id"
+echo "Runfolder          : $runfolder " 
+echo "Sheet              : $sheet"
+echo "Index-type         : ${index}-index"
+echo "Bcl2fastq arg      : '$b2farg'"
+if [ -z $custom_genome ]; then
+    echo "Custom Genome      : NONE "
+else
+    echo "Custom Genome      : $custom_genome "
+fi
+if [ $demux == "ON" ]; then
+    echo "Demux              : YES "
+else
+    echo "Demux              : NO "
+fi
+if [ $resume == "y" ]; then
+    echo "Resume             : YES "
+else
+    echo "Resume             : NO "
+fi
+
+echo ""
+echo "Runfolder          : $runfolder "
+echo "Project Logfolder  : /projects/fs1/shared/ctg-projects/sc-rna-10x/$id"
+echo "QC Logfolder       : /projects/fs1/shared/ctg-qc/sc-rna-10x/$id"
+echo "Output             : /projects/fs1/nas-sync/ctg-delivery/sc-rna-10x/$id"
+echo ""
+
+# Prompt user to approve running in current directory and input
+read -p "> WARNING: Can only be run from within runfolder! 
+
+- Are you in runfolder in which you want run? 
+- And is input described above correct ?  
+
+(y/n)  ... : " prompt
+if [[ $prompt != "y" ]]
+then 
+    echo "> Exiting: Go to runfolder!"
+    exit 0
+fi
 
 #####################
 # Start nf-pipeline #

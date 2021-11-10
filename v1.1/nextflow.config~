@@ -1,4 +1,3 @@
-
 // Configuration file for sc-rna-10x pipeline 
 
 params {
@@ -35,12 +34,11 @@ params {
 	mouse="/projects/fs1/shared/references/mm10/cellranger/refdata-gex-mm10-2020-A"
 
 	// Directories:
- 	outdir = "/projects/fs1/nas-sync/ctg-delivery/sc-rna-10x/"
-	outmeta = "${outdir}/${metaid}"
-	basedir = "/projects/fs1/shared/ctg-projects/sc-rna-10x/${metaid}"
+ 	outdir = "/projects/fs1/nas-sync/ctg-delivery/sc-rna-10x/${metaid}/"
+	basedir = "/projects/fs1/shared/ctg-projects/sc-rna-10x/${metaid}/"
 	sheet = "${basedir}/${ssheet}"
-	fqdir = "${outmeta}fastq/"
-	ctgqc = "/projects/fs1/shared/ctg-qc/sc-rna-10x/"
+	fqdir = "${outdir}fastq/"
+	ctgqc = "/projects/fs1/shared/ctg-qc/sc-rna-10x/${metaid}"
 
 }
 
@@ -54,7 +52,7 @@ process {
 	withName:gen_aggCSV {
 	        time='1h'
 		cpus='1'
-		memory='1 GB'
+		memory='10 GB'
 	}
 	withName:parsesheet {
 		time='1h'
@@ -69,12 +67,12 @@ process {
 	withName:count {
 		time='2d'
 		cpus='20'
-		memory='128 GB'
+		memory='120 GB'
 	}
 	withName:aggregate {
 		time='2d'
 		cpus='16'
-		memory='128 GB'	
+		memory='120 GB'	
 		   
 	}
 }
