@@ -26,19 +26,19 @@ The following files must be in the runfolder to start pipeline successfully.
 Note: One samplesheet pr project!
 Note: Must be in comma-separated values format (.csv)
 
-| [Data] | , | , | , | , | , | 
-| --- | --- | --- | --- | --- | --- |
-| **Lane** | **Sample_ID** | **index** | **Sample_Project** | **Sample_Species** | **nuclei** | 
-|  | Si1 | SI-GA-D9 | proj_2021_012 | human | y | 
-|  | Si2 | SI-GA-H9 | proj_2021_012 | human | y | 
+| [Data] | , | , | , | , | , | , |
+| --- | --- | --- | --- | --- | --- | --- |
+| **Lane** | **Sample_ID** | **index** | **Sample_Project** | **Sample_Species** | **nuclei** | **email** |
+|  | Si1 | SI-GA-D9 | proj_2021_012 | human | y | cus@mail.com;cust2@mail.com |
+|  | Si2 | SI-GA-H9 | proj_2021_012 | human | y | cus3@mail.com |
 
 
 - Lane can also be specified if needed:
 
- | Lane | Sample_ID | index | Sample_Project | Sample_Species | nuclei | 
- | --- | --- | --- | --- | --- | --- | 
- | 1 | Si1 | SI-GA-D9 | proj_2021_012 | human | y | 
- | 1 | Si2 | SI-GA-H9 | proj_2021_012 | human | y | 
+ | Lane | Sample_ID | index | Sample_Project | Sample_Species | nuclei | email |
+ | --- | --- | --- | --- | --- | --- | --- |
+ | 1 | Si1 | SI-GA-D9 | proj_2021_012 | human | y | cu@mail.com;cust2@mail.com |
+ | 1 | Si2 | SI-GA-H9 | proj_2021_012 | human | y | cur@mail.com;cu2@mail.com |
 
 
 The nf-pipeline takes the following Columns from samplesheet to use in channels:
