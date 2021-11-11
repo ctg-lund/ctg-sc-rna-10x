@@ -57,9 +57,9 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 ```
 
 [Data]
-Lane,Sample_ID,index,Sample_Project,Sample_Species,nuclei
-,Si1,SI-GA-D9,2021_012,human,y
-,Si2,SI-GA-H9,2021_012,human,y
+Lane,Sample_ID,index,Sample_Project,Sample_Species,nuclei,email
+,Si1,SI-GA-D9,2021_012,human,y,cst1@mail.com;cst2@mail.com
+,Si2,SI-GA-H9,2021_012,human,y,cst4@mail.com
 ``` 
 
 
