@@ -51,6 +51,8 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 - `force`  : Set to 'n' if NOT running with --force-cells. If you want to force cells for the sample, set this to the number you want to force
 - `Lane` : Only needed to add if you actually sequence the project on a specific lane. Else, this column can be omitted. 
 
+**Delivery-email generation:**
+- `email` : Column should have the email adresses for recipients of delivery mail. If multiple emails, separate with ";" 
 
 ### Samplesheet template (.csv)
 
