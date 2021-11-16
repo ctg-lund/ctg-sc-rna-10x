@@ -26,19 +26,19 @@ The following files must be in the runfolder to start pipeline successfully.
 Note: One samplesheet pr project!
 Note: Must be in comma-separated values format (.csv)
 
-| [Data] | , | , | , | , | , | , |
-| --- | --- | --- | --- | --- | --- | --- |
-| **Lane** | **Sample_ID** | **index** | **Sample_Project** | **Sample_Species** | **nuclei** | **email** |
-|  | Si1 | SI-GA-D9 | proj_2021_012 | human | y | cus@mail.com;cust2@mail.com |
-|  | Si2 | SI-GA-H9 | proj_2021_012 | human | y | cus3@mail.com |
+| [Data] | , | , | , | , | , | , | , |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **Lane** | **Sample_ID** | **index** | **Sample_Project** | **Sample_Species** | **nuclei** | **force** | **email** |
+|  | Si1 | SI-GA-D9 | proj_2021_012 | human | n | n | cus@mail.com;cust2@mail.com |
+|  | Si2 | SI-GA-H9 | proj_2021_012 | human | y | 5000 | cus3@mail.com |
 
 
 - Lane can also be specified if needed:
 
- | Lane | Sample_ID | index | Sample_Project | Sample_Species | nuclei | email |
- | --- | --- | --- | --- | --- | --- | --- |
- | 1 | Si1 | SI-GA-D9 | proj_2021_012 | human | y | cu@mail.com;cust2@mail.com |
- | 1 | Si2 | SI-GA-H9 | proj_2021_012 | human | y | cur@mail.com;cu2@mail.com |
+ | Lane | Sample_ID | index | Sample_Project | Sample_Species | nuclei | force | email |
+ | --- | --- | --- | --- | --- | --- | --- | --- |
+ | 1 | Si1 | SI-GA-D9 | proj_2021_012 | human | n | n | cu@mail.com;cust2@mail.com |
+ | 1 | Si2 | SI-GA-H9 | proj_2021_012 | human | y | 5000 | cur@mail.com;cu2@mail.com |
 
 
 The nf-pipeline takes the following Columns from samplesheet to use in channels:
@@ -48,6 +48,7 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 - `Sample_Project` : Project ID. E.g. 2021_033, 2021_192.
 - `Sample_Species` : Only 'human'/'mouse'/'custom' are accepted. If species is not human or mouse, set 'custom'. This custom reference genome has to be specified in the nextflow config file. See below how to edit the config file.
 - `nuclei` : Set to 'y' if the sample is nuclei, otherwise 'n'. 
+- `force`  : Set to 'n' if NOT running with --force-cells. If you want to force cells for the sample, set this to the number you want to force
 - `Lane` : Only needed to add if you actually sequence the project on a specific lane. Else, this column can be omitted. 
 
 
@@ -55,11 +56,11 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 
 #### Name : `CTG_SampleSheet.sc-rna-10x.csv`
 ```
-
+ProjectID,2021_012
 [Data]
 Lane,Sample_ID,index,Sample_Project,Sample_Species,nuclei,email
-,Si1,SI-GA-D9,2021_012,human,y,cst1@mail.com;cst2@mail.com
-,Si2,SI-GA-H9,2021_012,human,y,cst4@mail.com
+,Si1,SI-GA-D9,2021_012,human,n,n,cst1@mail.com;cst2@mail.com
+,Si2,SI-GA-H9,2021_012,human,y,5000,cst4@mail.com
 ``` 
 
 
