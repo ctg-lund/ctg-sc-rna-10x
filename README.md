@@ -21,7 +21,7 @@ The following files must be in the runfolder to start pipeline successfully.
 
 1. Samplesheet (CTG_SampleSheet.sc-rna.10x.csv)
 
-(Note that if running without demux, another samplesheet is needed! See below "Running without demux")
+(Note that if running without demux, another samplesheet is needed! See below https://github.com/perllb/ctg-sc-rna-10x/blob/master/README.md#running-without-demux-with-existing-fastq-files)
 
 ### Samplesheet requirements:
 
@@ -79,12 +79,14 @@ Lane,Sample_ID,index,Sample_Project,Sample_Species,nuclei,email
 ``` 
 - The `fastqpath` has to point to a directory which has "project-id/sid/sid.fastq" structure. That is, within `fastqpath` there has to be a folder with the project name specified in the samplesheet under `Sample_Project`. In the project folder, each sample (`Sample_ID`) has a folder in which fastqs are
 -- fastqpath
+```
    |__ Sample_Project
        |__ Sample_ID
            |__ Sample_ID.R1.fastq
            |__ Sample_ID.R2.fastq
            |__ Sample_ID.I1.fastq
            |__ Sample_ID.I2.fastq
+```
 
 The driver can be executed from wherever.
 
