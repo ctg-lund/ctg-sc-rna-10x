@@ -58,7 +58,7 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 
 #### Name : `CTG_SampleSheet.sc-rna-10x.csv`
 ```
-ProjectID,2021_012
+metaid,2021_012
 [Data]
 Lane,Sample_ID,index,Sample_Project,Sample_Species,nuclei,email
 ,Si1,SI-GA-D9,2021_012,human,n,n,cst1@mail.com;cst2@mail.com
