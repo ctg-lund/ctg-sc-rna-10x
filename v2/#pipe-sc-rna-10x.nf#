@@ -63,18 +63,9 @@ for ( line in all_lines ) {
 Channel
     .fromPath(chsheet)
     .splitCsv(header:true)
-    .map { row -> tuple( row.Sample_ID, row.Sample_Project, row.Sample_Species, row.nuclei, row.force) }
+    .map { row -> tuple( row.Sample_ID, row.Sample_Project, row.Sample_Species, row.nuclei) }
     .tap{infoall}
     .into { crCount_csv; cragg_ch; mvfastq_csv }
-
-// all samplesheet info
-Channel
-    .fromPath(chsheet)
-    .splitCsv(header:true)
-    .map { row -> tuple( row.Sample_Project, row.email) }
-    .unique()
-    .tap{delinfo}
-    .into { deliveryInfo }
 
 // Projects
 Channel
@@ -86,31 +77,19 @@ Channel
     .into { count_summarize; mqc_cha_init_uniq }
 
 println " > Samples to process: "
-println "[Sample_ID,Sample_Name,Sample_Project,Sample_Species,nuclei,forcecells]"
+println "[Sample_ID,Sample_Name,Sample_Project,Sample_Species,nuclei]"
 infoall.subscribe { println "Info: $it" }
 
 println " > Projects to process : "
 println "[Sample_Project]"
 infoProject.subscribe { println "Info Projects: $it" }
 
-println " > Delivery mails "
-println "[Project,Email]"
-delinfo.subscribe { println "$it" }
 
-process delivery_info {
-
-	tag "$metaid"
-
-	input:
-	set projid, email from deliveryInfo
-
-	"""
-	mkdir -p ${outdir}/${projid}	
-	deliveryinfo="${outdir}/${projid}/ctg-delivery.info.csv"
-	echo "projid,${projid}" > \$deliveryinfo
-	echo "email,${email}" >> \$deliveryinfo
-	echo "pipeline,sc-rna-10x" >> \$deliveryinfo
-	"""
+// Channel to start count if demux == 'n'
+if ( demux == 'n' ) {
+   Channel
+	 .from("1")
+    	 .set{ crCount }
 }
 
 // Parse samplesheet
@@ -168,11 +147,11 @@ process moveFastq {
 
     input:
     val x from moveFastq
-    set sid, projid, ref, nuclei, force from mvfastq_csv
+    set sid, projid, ref, nuclei from mvfastq_csv
 
     output:
     val "y" into crCount
-    set sid, projid, ref, nuclei, force into fqc_ch
+    set sid, projid, ref, nuclei into fqc_ch
 
     when:
     demux = 'y'
@@ -192,23 +171,15 @@ process moveFastq {
 
 }
 
-// Channel to start analysis if demux == 'n'
-// Projects
-if ( demux == 'n' ) {
-   Channel
-	 .from("1")
-	 .set{ crCount }
-}
-
 process count {
 
 	tag "${sid}-${projid}"
-	publishDir "${outdir}/${projid}/count-cr/", mode: "move", overwrite: true
+	publishDir "${outdir}/${projid}/count-cr/", mode: "copy", overwrite: true
 
 	input: 
 	val sheet
 	val y from crCount.collect()
-        set sid, projid, ref, nuclei, force from crCount_csv
+        set sid, projid, ref, nuclei from crCount_csv
 
 	output:
         file "${sid}/outs/" into samplename
@@ -216,42 +187,46 @@ process count {
 	val "${outdir}/${projid}/aggregate/${sid}.molecule_info.h5" into count_agg
 
 	script:
-	// Set force-cells if force not "n"
-	forcecells=""
-	if ( force != "n" ) {
-	   forcecells="--force-cells=" + force }
-
-	// Set nuclei if nuclei is 'y'
-	includeintrons=""
-	if ( nuclei == "y" ) {
-	   includeintrons="--include-introns" }
-
-	println("REFERENCE: " + ref + " == human: " + ( ref == "human"))
-	// Get reference
 	if ( ref == "Human" || ref == "human") {
-	   genome=params.human }
+	   genome=params.human 
+	   }	   
 	else if ( ref == "mouse" || ref == "Mouse") {
-	   genome=params.mouse }
+	   genome=params.mouse
+	   }
 	else if ( ref == "custom" || ref == "Custom") {
-	   genone=params.custom_genome }
+	   genone=params.custom_genome
+	   }
 	else {
 	   print ">ERROR: Species not recognized" 
-	   genome="ERR" }
+	   genome="ERR"
+	   }
 
-	// Set outdir
 	prcountdir = outdir + projid + "/count-cr/"
 	file(prcountdir).mkdir()   
 
-	"""
-	cellranger count \\
+	if ( nuclei == "y" ) 
+		"""
+		cellranger count \\
 	     --id=$sid \\
-	     --fastqs=${fqdir}/$projid/$sid \\
+	     --fastqs=${outdir}/$projid/fastq/$sid \\
+	     --sample=$sid \\
+	     --include-introns \\
+             --project=$projid \\
+	     --transcriptome=\$genome \\
+             --localcores=20 --localmem=128 
+	     """
+	else
+	"""
+		cellranger count \\
+	     --id=$sid \\
+	     --fastqs=${outdir}/$projid/fastq/$sid \\
 	     --sample=$sid \\
              --project=$projid \\
-	     --transcriptome=$genome \\
-             --localcores=20 --localmem=128 \\
-             $includeintrons $forcecells
+	     --transcriptome=\$genome \\
+             --localcores=20 --localmem=128 
+"""
 
+	"""
         mkdir -p ${outdir}
         mkdir -p ${outdir}/${projid}
         mkdir -p ${outdir}/${projid}/summaries
@@ -292,7 +267,7 @@ process fastqc {
 	tag "${sid}-${projid}"
 
 	input:
-	set sid, projid, ref, nuclei, force from fqc_ch	
+	set sid, projid, ref, nuclei from fqc_ch	
         
         output:
         val projid into mqc_cha
@@ -320,6 +295,7 @@ process summarize_count {
 
 	output:
 	val projid into mqc_count 	
+	val "x" into run_summarize
 
 	"""
 
@@ -360,6 +336,23 @@ process multiqc {
     """
 }
 
+process multiqc_count_run {
+
+    tag "${metaid}"
+
+    input:
+    val x from run_summarize.collect()
+        
+    output:
+    val "x" into summarized
+
+    """
+    cd $outdir 
+    multiqc -f ${fqdir} ${outdir}/*/qc/cellranger/ --outdir ${ctgqc}/${metaid}/ -n ${metaid}_run_sc-rna-10x_summary_multiqc_report.html
+
+    """
+
+}
 
 // aggregation
 process gen_aggCSV {
@@ -367,7 +360,7 @@ process gen_aggCSV {
     tag "${sid}_${projid}"
 
     input:
-    set sid, projid, ref, nuclei, force from cragg_ch
+    set sid, projid, ref, nuclei from cragg_ch
 
     output:
     val projid into craggregate

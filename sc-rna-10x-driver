@@ -12,14 +12,19 @@
 ###  -> Write pipeline output 
 ### * nf-Pipeline writes qc to shared/ctg-qc/sc-rna-10x
 
-echo "first echo"
 # Initialize variables
 runfolder=$(pwd)
 run=$(basename $runfolder)
-demux="ON"
+demux="y"
 resume='n'
 index='dual'
 version='deployed'
+
+# Set directories
+ctgproj="/projects/fs1/shared/ctg-projects/sc-rna-10x/"
+ctgqc="/projects/fs1/shared/ctg-qc/sc-rna-10x/"
+ctgdelivery="/projects/fs1/shared/ctg-delivery/sc-rna-10x/"
+ctgpipe="/projects/fs1/shared/ctg-pipelines/ctg-sc-rna-10x/"
 
 # usage message 
 usage() {
@@ -63,7 +68,7 @@ while getopts i:s:v:b:ac:rdh opt; do
 	    ;;
 	c) custom_genome=$OPTARG
 	    ;;
-	d) demux="OFF"
+	d) demux="n"
 	    ;;
 	h) exit_abnormal
 	    ;;
@@ -92,7 +97,7 @@ fi
 # Check meta-id - assign project number if not specified
 if [ -z $id ]; then
     echo "> No meta-ID specified"
-    metaid=$(grep "ProjectID" $sheet | cut -f2 -d"," | tr -d '\n\r')
+    metaid=$(grep "metaid" $sheet | cut -f2 -d"," | tr -d '\n\r')
     if [ -z $metaid ]; then
 	metaid=$(echo $run | cut -f1,3 -d"_")
 	id="${metaid}-sc-rna-10x"
@@ -101,8 +106,21 @@ if [ -z $id ]; then
     fi
     echo "- Using: '${id}'"
 fi
+projdir="$ctgproj/$id/"
 
-projdir="/projects/fs1/shared/ctg-projects/sc-rna-10x/$id/"
+# If running without demux, get fastqpath from samplesheet
+if [[ $demux == "n" ]]; then
+    echo "> Fetching fastq path from samplesheet"
+    fastqpath=$(grep "fastqpath" $sheet | cut -f2 -d"," | tr -d '\n\r')
+    echo "- fastqpath fetched: $fastqpath"
+    if [ ! -d $fastqpath ]; then
+	echo ">> ERROR: fastqpath '$fastqpath' does not exist"
+    else
+	echo " - path exists.."
+    fi
+else
+    fastqpath="\${outdir}/${id}/fastq"
+fi
 
 # Check if meta-ID already exist
 if [ "$resume" == 'n' ] && [ -d $projdir ]; then
@@ -111,8 +129,8 @@ if [ "$resume" == 'n' ] && [ -d $projdir ]; then
 
 The following directories already exist:
 - $projdir
-- /projects/fs1/shared/ctg-qc/sc-rna-10x/$id 
-- /projects/fs1/nas-sync/ctg-delivery/sc-rna-10x/$id 
+- $ctgqc/$id 
+- $ctgdelivery/$id 
 
 
 Do you want to overwrite these folders? 
@@ -125,8 +143,8 @@ Do you want to overwrite these folders?
     else
 	echo "> Deleting content of the folders.. "
 	rm -r $projdir/*
-	rm -r /projects/fs1/shared/ctg-qc/sc-rna-10x/$id/*
-	rm -r /projects/fs1/nas-sync/ctg-delivery/sc-rna-10x/$id/*
+	rm -r $ctgqc/$id/*
+	rm -r $ctgdelivery/$id/*
     fi
 else
     echo "> Proceeding with project '$id' "
@@ -141,9 +159,9 @@ mkdir -p $projdir
 
 # Copy nextflow script and config to project folder
 if [ $version == "deployed" ]; then
-    piperoot="/projects/fs1/shared/ctg-pipelines/ctg-sc-rna-10x/"
+    piperoot="$ctgpipe"
 else
-    piperoot="/projects/fs1/shared/ctg-pipelines/ctg-sc-rna-10x/v${version}"
+    piperoot="$ctgpipe/v${version}"
 fi
 
 nf_pipe="${piperoot}/pipe-sc-rna-10x.nf"
@@ -164,11 +182,12 @@ sed "s/xindextypex/$index/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
 if [ ! -z $custom_genome ]; then
     sed "s/xcustomgenomex/$custom_genome/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
 fi
-if [ $demux == "ON" ];then
+if [ $demux == "y" ];then
     sed "s/xdemuxx/y/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
 else
     sed "s/xdemuxx/n/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
 fi
+sed "s|xfastqdirx|$fastqpath|g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
 
 # Copy edited config to runfolder
 cp $proj_conf $runfolder/$id.nextflow.config
@@ -193,10 +212,11 @@ if [ -z $custom_genome ]; then
 else
     echo "Custom Genome      : $custom_genome "
 fi
-if [ $demux == "ON" ]; then
+if [ $demux == "y" ]; then
     echo "Demux              : YES "
 else
     echo "Demux              : NO "
+    echo "- fastqpath        : $fastqpath "
 fi
 if [ $resume == "y" ]; then
     echo "Resume             : YES "
@@ -206,22 +226,41 @@ fi
 
 echo ""
 echo "Runfolder          : $runfolder "
-echo "Project Logfolder  : /projects/fs1/shared/ctg-projects/sc-rna-10x/$id"
-echo "QC Logfolder       : /projects/fs1/shared/ctg-qc/sc-rna-10x/$id"
-echo "Output             : /projects/fs1/nas-sync/ctg-delivery/sc-rna-10x/$id"
+echo "Project Logfolder  : $projdir"
+echo "QC Logfolder       : $ctgqc/$id"
+echo "Output             : $ctgdelivery/$id"
 echo ""
 
-# Prompt user to approve running in current directory and input
-read -p "> WARNING: Can only be run from within runfolder! 
+if [[ $demux == "y" ]]; then
+    echo "Runfolder          : $runfolder "
+    # Prompt user to approve running in current directory and input
+    read -p "> WARNING: Can only be run from within runfolder! 
 
 - Are you in runfolder in which you want run? 
 - And is input described above correct ?  
 
 (y/n)  ... : " prompt
-if [[ $prompt != "y" ]]
-then 
-    echo "> Exiting: Go to runfolder!"
-    exit 0
+    if [[ $prompt != "y" ]]
+    then 
+	echo "> Exiting: Go to runfolder!"
+	exit 0
+    fi
+
+# If running without demux, does not have to be executed from runfolder 
+elif [[ $demux == "n" ]]; then
+    echo "execution folder   : $runfolder "
+    echo "fastq-path         : $fastqpath "
+    # Prompt user to approve running in current directory and input
+    read -p "> WARNING: Running without demux, so this program does not have to be executed from runfolder.
+
+- And is input described above correct ?  
+
+(y/n)  ... : " prompt
+    if [[ $prompt != "y" ]]
+    then 
+	echo "> Exiting..!"
+	exit 0
+    fi
 fi
 
 #####################
