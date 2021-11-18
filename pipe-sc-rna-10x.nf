@@ -242,10 +242,15 @@ process count {
 	prcountdir = outdir + projid + "/count-cr/"
 	file(prcountdir).mkdir()   
 
+	fastq_count = outdir + "/" + projid + "/fastq/" + sid 
+	if ( demux == "n" ) {
+	   fastq_count = fqdir + "/" + projid + "/" + sid
+        }
+	   
 	"""
 	cellranger count \\
 	     --id=$sid \\
-	     --fastqs=${fqdir}/$projid/$sid \\
+	     --fastqs=${fastq_count} \\
 	     --sample=$sid \\
              --project=$projid \\
 	     --transcriptome=$genome \\
