@@ -78,8 +78,9 @@ Lane,Sample_ID,index,Sample_Project,Sample_Species,nuclei,email
 ,Si2,SI-GA-H9,2021_012,human,y,5000,cst4@mail.com
 ``` 
 - The `fastqpath` has to point to a directory which has "project-id/sid/sid.fastq" structure. That is, within `fastqpath` there has to be a folder with the project name specified in the samplesheet under `Sample_Project`. In the project folder, each sample (`Sample_ID`) has a folder in which fastqs are
--- fastqpath
+
 ```
+__ fastqpath
    |__ Sample_Project
        |__ Sample_ID
            |__ Sample_ID.R1.fastq
