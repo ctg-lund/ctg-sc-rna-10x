@@ -77,16 +77,14 @@ Lane,Sample_ID,index,Sample_Project,Sample_Species,nuclei,email
 ,Si1,SI-GA-D9,2021_012,human,n,n,cst1@mail.com;cst2@mail.com
 ,Si2,SI-GA-H9,2021_012,hs-mm,y,5000,cst4@mail.com
 ``` 
-- The `fastqpath` has to point to a directory which has "project-id/sid/sid.fastq" structure. That is, within `fastqpath` there has to be a folder with the project name specified in the samplesheet under `Sample_Project`. In the project folder, each sample (`Sample_ID`) has a folder in which fastqs are
-
+- The `fastqpath` has to point to a directory which has "<fastqpath>/sid...fastq" structure. That is, the `fastqpath` folder has to contain all fastq files for each sample, with name starting with the corresponding `Sample_ID`.
 ```
 __ fastqpath
-   |__ Sample_Project
-       |__ Sample_ID
            |__ Sample_ID.R1.fastq
            |__ Sample_ID.R2.fastq
            |__ Sample_ID.I1.fastq
            |__ Sample_ID.I2.fastq
+            ....
 ```
 
 The driver can be executed from wherever.
