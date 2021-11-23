@@ -80,10 +80,10 @@ Lane,Sample_ID,index,Sample_Project,Sample_Species,nuclei,email
 - The `fastqpath` has to point to a directory which has "<fastqpath>/sid...fastq" structure. That is, the `fastqpath` folder has to contain all fastq files for each sample, with name starting with the corresponding `Sample_ID`.
 ```
 __ fastqpath
-           |__ Sample_ID.R1.fastq
-           |__ Sample_ID.R2.fastq
-           |__ Sample_ID.I1.fastq
-           |__ Sample_ID.I2.fastq
+           |__ Sample_ID*R1*fastq
+           |__ Sample_ID*R2*fastq
+           |__ Sample_ID*I1*fastq
+           |__ Sample_ID*I2*fastq
             ....
 ```
 
