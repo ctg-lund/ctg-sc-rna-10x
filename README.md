@@ -28,33 +28,38 @@ The following files must be in the runfolder to start pipeline successfully.
 Note: One samplesheet pr project!
 Note: Must be in comma-separated values format (.csv)
 
-| [Data] | , | , | , | , | , | , | , |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| **Lane** | **Sample_ID** | **index** | **Sample_Project** | **Sample_Species** | **nuclei** | **force** | **email** |
-|  | Si1 | SI-GA-D9 | proj_2021_012 | human | n | n | cus@mail.com;cust2@mail.com |
-|  | Si2 | SI-GA-H9 | proj_2021_012 | hs-mm | y | 5000 | cus3@mail.com |
+| [Data] | , | , | , | , | , | , | , | , |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **Lane** | **Sample_ID** | **index** | **Sample_Project** | **Sample_Species** | **nuclei** | **force** | **email** | **deliver** |
+|  | Si1 | SI-GA-D9 | proj_2021_012 | human | n | n | cus@mail.com;cust2@mail.com | y |
+|  | Si2 | SI-GA-H9 | proj_2021_192 | hs-mm | y | 5000 | cus3@mail.com | n |
 
 
 - Lane can also be specified if needed:
 
- | Lane | Sample_ID | index | Sample_Project | Sample_Species | nuclei | force | email |
- | --- | --- | --- | --- | --- | --- | --- | --- |
- | 1 | Si1 | SI-GA-D9 | proj_2021_012 | human | n | n | cu@mail.com;cust2@mail.com |
- | 1 | Si2 | SI-GA-H9 | proj_2021_012 | human | y | 5000 | cur@mail.com;cu2@mail.com |
+ | Lane | Sample_ID | index | Sample_Project | Sample_Species | nuclei | force | email | deliver |
+ | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+ | 1 | Si1 | SI-GA-D9 | proj_2021_012 | human | n | n | cu@mail.com;cust2@mail.com | y |
+ | 1 | Si2 | SI-GA-H9 | proj_2021_192 | hs-mm | y | 5000 | cur@mail.com;cu2@mail.com | n |
 
 
 The nf-pipeline takes the following Columns from samplesheet to use in channels:
 
 - `Sample_ID` : ID of sample. Sample_ID can only contain a-z, A-Z and "_".  E.g space and hyphen ("-") are not allowed! If 'Sample_Name' is present, it will be ignored. 
-- `index` : Must use index ID (10x ID) if dual index. For single index, the index sequence works too.
 - `Sample_Project` : Project ID. E.g. 2021_033, 2021_192.
 - `Sample_Species` : Only 'human'/'mouse'/'hs-mm'/'custom' are accepted. If you want to run the mixed GRCh38+mm10 genome, set "hs-mm". If species is not human or mouse (or mixed - "hs-mm") - or if an alternative reference e.g. with added gene/sequnece - set 'custom'. This custom reference genome has to be specified in the nextflow config file. See below how to edit the config file. Alternatively, when running driver, you can specify the path command line with the -c flag: `sc-rna-10x-driver -c /full/path/to/reference` 
 - `nuclei` : Set to 'y' if the sample is nuclei, otherwise 'n'. 
 - `force`  : Set to 'n' if NOT running with --force-cells. If you want to force cells for the sample, set this to the number you want to force
-- `Lane` : Only needed to add if you actually sequence the project on a specific lane. Else, this column can be omitted. 
+
 
 **Delivery-email generation:**
-- `email` : Column should have the email adresses for recipients of delivery mail. If multiple emails, separate with ";" 
+- `email`  : Column should have the email adresses for recipients of delivery mail. If multiple emails, separate with ";" 
+- `deliver`: Set to 'y' if data should be automatically transferred to lfs603 and email sent to customer (defined in `email`) after pipeline is executed. Otherwise, set to 'n'.
+
+
+**Only needed for demux**
+- `index` : Must use index ID (10x ID) if dual index. For single index, the index sequence works too.
+- `Lane` : Only needed to add if you actually sequence the project on a specific lane. Else, this column can be omitted. 
 
 ### Samplesheet template (.csv)
 
@@ -62,9 +67,9 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 ```
 metaid,2021_012
 [Data]
-Lane,Sample_ID,index,Sample_Project,Sample_Species,nuclei,email
-,Si1,SI-GA-D9,2021_012,human,n,n,cst1@mail.com;cst2@mail.com
-,Si2,SI-GA-H9,2021_012,hs-mm,y,5000,cst4@mail.com
+Lane,Sample_ID,index,Sample_Project,Sample_Species,nuclei,email,deliver
+,Si1,SI-GA-D9,2021_012,human,n,n,cst1@mail.com;cst2@mail.com,y
+,Si2,SI-GA-H9,2021_012,hs-mm,y,5000,cst4@mail.com,y
 ``` 
 ## Running without demux (with existing fastq files)
 
@@ -73,9 +78,9 @@ The main difference of the samplesheet is that `fastqpath` is added to sampleshe
 metaid,2021_012
 fastqpath,/path/to/fastq
 [Data]
-Lane,Sample_ID,index,Sample_Project,Sample_Species,nuclei,email
-,Si1,SI-GA-D9,2021_012,human,n,n,cst1@mail.com;cst2@mail.com
-,Si2,SI-GA-H9,2021_012,hs-mm,y,5000,cst4@mail.com
+Lane,Sample_ID,index,Sample_Project,Sample_Species,nuclei,email,deliver
+,Si1,SI-GA-D9,2021_012,human,n,n,cst1@mail.com;cst2@mail.com,y
+,Si2,SI-GA-H9,2021_012,hs-mm,y,5000,cst4@mail.com,y
 ``` 
 - The `fastqpath` has to point to a directory which has "<fastqpath>/sid...fastq" structure. That is, the `fastqpath` folder has to contain all fastq files for each sample, with name starting with the corresponding `Sample_ID`.
 ```
@@ -100,6 +105,7 @@ Cellranger version: cellranger v6.0
 * `Cellranger count metrics` (bin/ctg-sc-count-metrics-concat.py): Collects main count metrics (#cells and #reads/cell etc.) from each sample and collect in table
 * `multiQC`: Compile fastQC and cellranger count metrics in multiqc report
 * `md5sum`: md5sum of all generated files
+* `delivery`: Sending data to lfs603 delivery folder (created by script); and send email with download instruction to customer - also attach qc files and ctg-delivery-guide. 
 
 
 ## Output:
