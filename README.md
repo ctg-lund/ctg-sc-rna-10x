@@ -28,19 +28,11 @@ The following files must be in the runfolder to start pipeline successfully.
 Note: One samplesheet pr project!
 Note: Must be in comma-separated values format (.csv)
 
-| [Data] | , | , | , | , | , | , | , | , |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Lane** | **Sample_ID** | **index** | **Sample_Project** | **Sample_Species** | **nuclei** | **force** | **email** | **deliver** |
-|  | Si1 | SI-GA-D9 | proj_2021_012 | human | n | n | cus@mail.com;cust2@mail.com | y |
-|  | Si2 | SI-GA-H9 | proj_2021_192 | hs-mm | y | 5000 | cus3@mail.com | n |
-
-
-- Lane can also be specified if needed:
-
- | Lane | Sample_ID | index | Sample_Project | Sample_Species | nuclei | force | email | deliver |
- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
- | 1 | Si1 | SI-GA-D9 | proj_2021_012 | human | n | n | cu@mail.com;cust2@mail.com | y |
- | 1 | Si2 | SI-GA-H9 | proj_2021_192 | hs-mm | y | 5000 | cur@mail.com;cu2@mail.com | n |
+| [Data] | , | , | , | , | , | , | , | , | , |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **Lane** | **Sample_ID** | **index** | **Sample_Project** | **Sample_Species** | **nuclei** | **force** | **agg** | **email** | **deliver** |
+|  | Si1 | SI-GA-D9 | proj_2021_012 | human | n | n | y | cus@mail.com;cust2@mail.com | y |
+|  | Si2 | SI-GA-H9 | proj_2021_192 | hs-mm | y | 5000 | n | cus3@mail.com | n |
 
 
 The nf-pipeline takes the following Columns from samplesheet to use in channels:
@@ -50,7 +42,7 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 - `Sample_Species` : Only 'human'/'mouse'/'hs-mm'/'custom' are accepted. If you want to run the mixed GRCh38+mm10 genome, set "hs-mm". If species is not human or mouse (or mixed - "hs-mm") - or if an alternative reference e.g. with added gene/sequnece - set 'custom'. This custom reference genome has to be specified in the nextflow config file. See below how to edit the config file. Alternatively, when running driver, you can specify the path command line with the -c flag: `sc-rna-10x-driver -c /full/path/to/reference` 
 - `nuclei` : Set to 'y' if the sample is nuclei, otherwise 'n'. 
 - `force`  : Set to 'n' if NOT running with --force-cells. If you want to force cells for the sample, set this to the number you want to force
-
+- `agg`    : Set to 'y' for all samples that you want to aggregate (pr project)
 
 **Delivery-email generation:**
 - `email`  : Column should have the email adresses for recipients of delivery mail. If multiple emails, separate with ";" 
@@ -64,13 +56,25 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 ### Samplesheet template (.csv)
 
 #### Name : `CTG_SampleSheet.sc-rna-10x.csv`
+
 ```
 metaid,2021_012
 [Data]
-Lane,Sample_ID,index,Sample_Project,Sample_Species,nuclei,email,deliver
-,Si1,SI-GA-D9,2021_012,human,n,n,cst1@mail.com;cst2@mail.com,y
-,Si2,SI-GA-H9,2021_012,hs-mm,y,5000,cst4@mail.com,y
+Lane,Sample_ID,Sample_Name,index,Sample_Project,Sample_Species,nuclei,force,agg,email,deliver
+,a1,a,SI-TT-A11,2021_Test2_Aydan,human,n,n,n,per.brattas@med.lu.se,y
+,b2,b,SI-TT-A12,2021_Test2_Aydan,human,n,n,n,per.brattas@med.lu.se,y
 ``` 
+
+**OR without specifying metaid (will be automatically generated)**
+
+```
+[Data]
+Lane,Sample_ID,Sample_Name,index,Sample_Project,Sample_Species,nuclei,force,agg,email,deliver
+,a1,a,SI-TT-A11,2021_Test2_Aydan,human,n,n,n,per.brattas@med.lu.se,y
+,b2,b,SI-TT-A12,2021_Test2_Aydan,human,n,n,n,per.brattas@med.lu.se,y
+``` 
+
+
 ## Running without demux (with existing fastq files)
 
 The main difference of the samplesheet is that `fastqpath` is added to samplesheet header:
