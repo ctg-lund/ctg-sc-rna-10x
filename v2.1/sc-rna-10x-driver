@@ -142,9 +142,9 @@ Do you want to overwrite these folders?
 	exit_abnormal
     else
 	echo "> Deleting content of the folders.. "
-	rm -r $projdir*
-	rm -r $ctgqc/$id*
-	rm -r $ctgdelivery/$id*
+	rm -r $projdir/*
+	rm -r $ctgqc/$id/*
+	rm -r $ctgdelivery/$id/*
     fi
 else
     echo "> Proceeding with project '$id' "
@@ -174,7 +174,7 @@ cp -r $nf_bin $projdir
 
 # Edit config file
 proj_conf=$projdir/nextflow.config
-sed "s/xmetaidx/${id}/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
+sed "s/xmetaidx/$id/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
 sed "s|xrunfolderx|$runfolder|g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
 sed "s/xsamplesheetx/$sheet/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
 sed "s/xbcl2fastqargx/$b2farg/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
@@ -233,9 +233,6 @@ echo ""
 
 if [[ $demux == "y" ]]; then
     echo "Runfolder          : $runfolder "
-    echo "mkfastq-dir        : ${ctgdelivery}/${id}-mkfastq" 
-
-
     # Prompt user to approve running in current directory and input
     read -p "> WARNING: Can only be run from within runfolder! 
 

@@ -1,0 +1,5 @@
+[Data],
+Lane,Sample_ID,Sample_Name,index,Sample_Project,Sample_Species,nuclei,force,email,deliver
+,YUMM_3_3_211206,YUMM_3_3_211206,SI-TT-E7,2021_test_katja,human,n,n,per.brattas@med.lu.se,julia.braunig@med.lu.se,y
+,942_211209,942_211209,SI-TT-F8,2021_test_katja,human,n,n,per.brattas@med.lu.se,julia.braunig@med.lu.se,y
+,YUMM_1_7_211209,YUMM_1_7_211209,SI-TT-G8,2021_test_katja,human,n,n,per.brattas@med.lu.se,julia.braunig@med.lu.se,y

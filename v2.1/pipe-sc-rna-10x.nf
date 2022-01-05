@@ -61,7 +61,7 @@ for ( line in all_lines ) {
 Channel
     .fromPath(chsheet)
     .splitCsv(header:true)
-    .map { row -> tuple( row.Sample_ID, row.Sample_Project, row.Sample_Species, row.nuclei, row.force, row.agg) }
+    .map { row -> tuple( row.Sample_ID, row.Sample_Project, row.Sample_Species, row.nuclei, row.force) }
     .tap{infoall}
     .into { crCount_csv; cragg_ch; mvfastq_csv }
 
@@ -69,10 +69,10 @@ Channel
 Channel
     .fromPath(chsheet)
     .splitCsv(header:true)
-    .map { row -> tuple( row.Sample_Project, row.email, row.deliver) }
+    .map { row -> tuple( row.Sample_Project, row.email) }
     .unique()
     .tap{delinfo}
-    .into { deliveryInfo; deliver_auto }
+    .set { deliveryInfo }
 
 // Projects
 Channel
@@ -84,7 +84,7 @@ Channel
     .into { count_summarize; mqc_cha_init_uniq }
 
 println " > Samples to process: "
-println "[Sample_ID,Sample_Name,Sample_Project,Sample_Species,nuclei,forcecells,aggregate]"
+println "[Sample_ID,Sample_Name,Sample_Project,Sample_Species,nuclei,forcecells]"
 infoall.subscribe { println "Info: $it" }
 
 println " > Projects to process : "
@@ -100,7 +100,7 @@ process delivery_info {
 	tag "$metaid"
 
 	input:
-	set projid, email, deliver from deliveryInfo
+	set projid, email from deliveryInfo
 
 	"""
 	mkdir -p ${outdir}/${projid}	
@@ -166,11 +166,11 @@ process moveFastq {
 
     input:
     val x from moveFastq
-    set sid, projid, ref, nuclei, force, agg from mvfastq_csv
+    set sid, projid, ref, nuclei, force from mvfastq_csv
 
     output:
     val "y" into crCount
-    set sid, projid, ref, nuclei, force, agg into fqc_ch
+    set sid, projid, ref, nuclei, force into fqc_ch
 
     when:
     demux = 'y'
@@ -205,7 +205,7 @@ process count {
 
 	input: 
 	val y from crCount.collect()
-        set sid, projid, ref, nuclei, force, agg from crCount_csv
+        set sid, projid, ref, nuclei, force from crCount_csv
 
 	output:
         file "${sid}/outs/" into samplename
@@ -295,7 +295,7 @@ process fastqc {
 	tag "${sid}-${projid}"
 
 	input:
-	set sid, projid, ref, nuclei, force, agg from fqc_ch	
+	set sid, projid, ref, nuclei, force from fqc_ch	
         
         output:
         val projid into mqc_cha
@@ -370,80 +370,72 @@ process gen_aggCSV {
     tag "${sid}_${projid}"
 
     input:
-    set sid, projid, ref, nuclei, force, agg from cragg_ch
+    set sid, projid, ref, nuclei, force from cragg_ch
 
     output:
-    set projid, ref, agg into craggregate
+    val projid into craggregate
     
-    """
+    when:
+    ref != "hs-mm"
 
-    if [ "$agg" == "y" ] && [ "$ref" != "hs-mm" ]; then
-        aggdir=$outdir/$projid/aggregate
-   	mkdir -p \$aggdir
-    	aggcsv=\$aggdir/${projid}_libraries.csv
-    	if [ -f \$aggcsv ]
-    	then 
-            if grep -q $sid \$aggcsv
-            then
-		echo ""
-            else
-		sleep 3 
-             	echo "${sid},${outdir}/${projid}/aggregate/${sid}.molecule_info.h5" >> \$aggcsv
-            fi
-    	else
-	    echo "sample_id,molecule_h5" > \$aggcsv
-	    sleep 2
-            echo "${sid},${outdir}/${projid}/aggregate/${sid}.molecule_info.h5" >> \$aggcsv
-    	fi
+    """
+    aggdir=$outdir/$projid/aggregate
+    mkdir -p \$aggdir
+    aggcsv=\$aggdir/${projid}_libraries.csv
+    if [ -f \$aggcsv ]
+    then
+        if grep -q $sid \$aggcsv
+        then
+             echo ""
+        else
+             sleep 3 
+             echo "${sid},${outdir}/${projid}/aggregate/${sid}.molecule_info.h5" >> \$aggcsv
+        fi
     else
-        echo "No aggregation performed - agg != 'y'"
+        echo "sample_id,molecule_h5" > \$aggcsv
+	sleep 2
+        echo "${sid},${outdir}/${projid}/aggregate/${sid}.molecule_info.h5" >> \$aggcsv
     fi
+
     """
 }
 
 process aggregate {
 
+    publishDir "${outdir}/${projid}/aggregate/", mode: 'move', overwrite: true
     tag "$projid"
   
     input:
-    set projid, ref, agg from craggregate.unique()
+    val projid from craggregate.unique()
     val moleculeinfo from count_agg.collect()
 
     output:
+    file "${projid}_agg/outs" into doneagg
     val projid into md5_proj
     val "x" into md5_wait
 
-    """
-    if [ "$agg" == "y" ] && [ "$ref" != "hs-mm" ]; then
-       aggdir="$outdir/$projid/aggregate"
+    when:
+    ref != "hs-mm"
 
-       cellranger aggr \
+    """
+    aggdir="$outdir/$projid/aggregate"
+
+    cellranger aggr \
        --id=${projid}_agg \
        --csv=\${aggdir}/${projid}_libraries.csv \
        --normalize=mapped
 
-
-       ## Copy to delivery folder 
-       cp ${projid}_agg/outs/web_summary.html ${outdir}/${projid}/summaries/web-summaries/${projid}_agg.web_summary.html
-       cp ${projid}_agg/outs/count/cloupe.cloupe ${outdir}/${projid}/summaries/cloupe/${projid}_agg_cloupe.cloupe
+    ## Copy to delivery folder 
+    cp ${projid}_agg/outs/web_summary.html ${outdir}/${projid}/summaries/web-summaries/${projid}_agg.web_summary.html
+    cp ${projid}_agg/outs/count/cloupe.cloupe ${outdir}/${projid}/summaries/cloupe/${projid}_agg_cloupe.cloupe
     
-	## Copy to CTG QC dir 
-    	cp ${outdir}/${projid}/summaries/web-summaries/${projid}_agg.web_summary.html ${ctgqc}/${projid}/web-summaries/
-    	cp ${outdir}/${projid}/summaries/cloupe/${projid}_agg_cloupe.cloupe ${ctgqc}/${projid}/web-summaries/
+    ## Copy to CTG QC dir 
+    cp ${outdir}/${projid}/summaries/web-summaries/${projid}_agg.web_summary.html ${ctgqc}/${projid}/web-summaries/
+    cp ${outdir}/${projid}/summaries/cloupe/${projid}_agg_cloupe.cloupe ${ctgqc}/${projid}/web-summaries/
 
-       ## Move output to delivery
-       if [ -d \${aggdir}/${projid}_agg ]; then
-           rm -r \${aggdir}/${projid}_agg
-       fi
-       mv ${projid}_agg \${aggdir}/
+    ## Remove the molecule_info.h5 files that are stored in the aggregate folder (the original files are still in count-cr/../outs 
+    rm ${outdir}/${projid}/aggregate/*h5
 
-	## Remove the molecule_info.h5 files that are stored in the aggregate folder (the original files are still in count-cr/../outs 
-    	rm ${outdir}/${projid}/aggregate/*h5
-    else
-        echo "No aggregation performed - agg != 'y'"
-    fi
-
-      
     """
 
 }
@@ -465,32 +457,10 @@ process md5sum {
 
 }
 
-process deliverAuto {
-
-	input:
-	set projid, email, deliver from deliver_auto
-	val "md5" from md5done
-
-	output:
-	val "sent" into deliverDone
-
-	when:
-	deliver == "y"
-
-	"""
-
-	cd ${outdir}
-
-	bash $basedir/bin/ctg-deliver2.sh -u per -d ${projid}
-
-	"""
-	
-
-}
 process sc_rna_10x_done {
 	
 	input:
-	val mdone from deliverDone
+	val mdone from md5done
 
 	""" 
 
