@@ -48,10 +48,14 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 - `email`  : Column should have the email adresses for recipients of delivery mail. If multiple emails, separate with ";" 
 - `deliver`: Set to 'y' if data should be automatically transferred to lfs603 and email sent to customer (defined in `email`) after pipeline is executed. Otherwise, set to 'n'.
 
-
-**Only needed for demux**
+**Demux**
 - `index` : Must use index ID (10x ID) if dual index. For single index, the index sequence works too.
 - `Lane` : Only needed to add if you actually sequence the project on a specific lane. Else, this column can be omitted. 
+
+**METAID**
+- Note that if you want to define a specific metaid for the run/analysis, it can be specified **above** the [Data] section in the samplesheet. See example below. 
+- If not specified, the sc-rna-10x-driver will automatically generate a metaid, based on runfolder date and ID.
+
 
 ### Samplesheet template (.csv)
 
