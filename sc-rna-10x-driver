@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#####################
-# sc-rna-10x driver #
-#####################
+echo "#####################"
+echo "# sc-rna-10x driver #"
+echo "#####################"
 
 ### This script will 
 ### * Run the sc-rna-10x pipeline on data in current runfolder
@@ -79,10 +79,10 @@ while getopts i:s:v:b:ac:rdh opt; do
     esac
 done
 
-## Check arguments
+echo "> Checking arguments"
 shift "$(( OPTIND -1 ))"
 
-# Check samplesheet name
+echo "> Checking samplesheet"
 if [ -z $sheet ]; then
     echo ""; echo "> WARNING! No samplesheet specified"
     sheet="CTG_SampleSheet.sc-rna-10x.csv"
@@ -94,10 +94,24 @@ if [ -z $sheet ]; then
     fi
 fi
 
-# Check meta-id - assign project number if not specified
+########################################
+# PARSE EXCEL .CSV 2 PLAIN .CSV
+########################################
+echo "> Parse Excel csv to Plain csv"
+plainsheet=$(echo $sheet | sed "s/.csv/.plain.csv/g")
+echo "- Plain csv SampleSheet: $plainsheet"
+sed "s/;/,/g" $sheet > $plainsheet
+echo "- Plain Sheet edited:"
+echo "-----------------------------------------------------------------------------------------------------------------------------"
+cat $plainsheet
+echo ""
+echo "-----------------------------------------------------------------------------------------------------------------------------"
+echo ""
+
+echo "> Check meta-id - assign project number if not specified"
 if [ -z $id ]; then
-    echo "> No meta-ID specified"
-    metaid=$(grep "metaid" $sheet | cut -f2 -d"," | tr -d '\n\r')
+    echo "- No meta-ID specified"
+    metaid=$(grep "metaid" $plainsheet | cut -f2 -d"," | tr -d '\n\r')
     if [ -z $metaid ]; then
 	metaid=$(echo $run | cut -f1,3 -d"_")
 	id="${metaid}-sc-rna-10x"
@@ -111,7 +125,7 @@ projdir="$ctgproj/$id/"
 # If running without demux, get fastqpath from samplesheet
 if [[ $demux == "n" ]]; then
     echo "> Fetching fastq path from samplesheet"
-    fastqpath=$(grep "fastqpath" $sheet | cut -f2 -d"," | tr -d '\n\r')
+    fastqpath=$(grep "fastqpath" $plainsheet | cut -f2 -d"," | tr -d '\n\r')
     echo "- fastqpath fetched: $fastqpath"
     if [ ! -d $fastqpath ]; then
 	echo ">> ERROR: fastqpath '$fastqpath' does not exist"
@@ -122,10 +136,10 @@ else
     fastqpath="\${outdir}/${id}-mkfastq"
 fi
 
-# Check if meta-ID already exist
+echo "> Check if meta-ID already exist"
 if [ "$resume" == 'n' ] && [ -d $projdir ]; then
     # Prompt user to approve overwriting current sc-rna-10x project-folder
-    read -p "> WARNING: $id has been used before:
+    read -p ">> WARNING: $id has been used before:
 
 The following directories already exist:
 - $projdir
@@ -138,7 +152,7 @@ Do you want to overwrite these folders?
 (y/n)  ... : " prompt
     if [[ $prompt != "y" ]]
     then 
-	echo "> Exiting: Please provide new [ -i metaID ] !"
+	echo ">> Exiting: Please provide new [ -i metaID ] !"
 	exit_abnormal
     else
 	echo "> Deleting content of the folders.. "
@@ -151,13 +165,13 @@ else
 fi
 
 ################
-# Set up files #
+echo "> Set up files "
 ################
 
-# Creating project dir for logging pipeline
+echo "> Creating project dir for logging/executing pipeline: $projdir"
 mkdir -p $projdir
 
-# Copy nextflow script and config to project folder
+echo "> Copy nextflow, scripts and config to project folder"
 if [ $version == "deployed" ]; then
     piperoot="$ctgpipe"
 else
@@ -172,11 +186,11 @@ cp $nf_pipe $projdir
 cp $nf_config $projdir
 cp -r $nf_bin $projdir
 
-# Edit config file
+echo "> Edit config file"
 proj_conf=$projdir/nextflow.config
 sed "s/xmetaidx/${id}/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
 sed "s|xrunfolderx|$runfolder|g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
-sed "s/xsamplesheetx/$sheet/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
+sed "s/xsamplesheetx/$plainsheet/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
 sed "s/xbcl2fastqargx/$b2farg/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
 sed "s/xindextypex/$index/g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
 if [ ! -z $custom_genome ]; then
@@ -189,10 +203,10 @@ else
 fi
 sed "s|xfastqdirx|$fastqpath|g" $proj_conf > tmp.txt; mv tmp.txt $proj_conf
 
-# Copy edited config to runfolder
+echo "> Copy edited config to runfolder"
 cp $proj_conf $runfolder/$id.nextflow.config
-# Copy samplesheet to project folder (ctg-projects..)
-cp $sheet $projdir
+echo "> Copy samplesheet to project folder (ctg-projects..)"
+cp $plainsheet $projdir
 
 
 ##############
@@ -204,7 +218,7 @@ echo "sc-rna-10x version : $version"
 echo "Pipeline           : $nf_pipe"
 echo "ID                 : $id"
 echo "Runfolder          : $runfolder " 
-echo "Sheet              : $sheet"
+echo "Sheet              : $plainsheet"
 echo "Index-type         : ${index}-index"
 echo "Bcl2fastq arg      : '$b2farg'"
 if [ -z $custom_genome ]; then
@@ -267,7 +281,7 @@ elif [[ $demux == "n" ]]; then
 fi
 
 #####################
-# Start nf-pipeline #
+echo "> Start nf-pipeline"
 #####################
 
 # Go to ctg-project folder to execute pipeline

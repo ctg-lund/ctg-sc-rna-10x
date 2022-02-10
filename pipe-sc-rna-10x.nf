@@ -15,7 +15,7 @@ b2farg = params.bcl2fastqarg
 index = params.index
 demux = params.demux
 
-// Read and process CTG samplesheet 
+// Read and process CTG samplesheet (must be plain .csv - not directly from excel)
 sheet = file(params.sheet)
 
 println "============================="
@@ -43,7 +43,7 @@ println "============================="
 chsheet = file("$basedir/sample-sheet.nf.channel.csv")
 demuxsheet = file("$basedir/sample-sheet.nf.demux.csv")
 
-// Read and process sample sheet                                                                                                          
+// Read and process sample sheet                                                                                                     
 all_lines = sheet.readLines()
 write_b = false // if next lines has sample info
 chsheet.text=""
@@ -143,6 +143,7 @@ process mkfastq {
 
 	output:
 	val 1 into moveFastq
+	val "x" into demux_qc
 
 	when:
 	demux == 'y'
@@ -178,7 +179,6 @@ process moveFastq {
     """
     mkdir -p ${outdir}/${projid}
     mkdir -p ${outdir}/${projid}/fastq
-
     mkdir -p ${outdir}/${projid}/fastq/$sid
 
     if [ -d ${fqdir}/${projid}/$sid ]; then
@@ -364,6 +364,26 @@ process multiqc {
 }
 
 
+// Run-based demux multiqc 
+process multiqc_demux {
+
+    tag "${projid}"
+
+    input:
+    val x from demux_qc
+
+    script:
+    """
+    mkdir -p ${ctgqc}/${metaid}/
+    mkdir -p ${ctgqc}/${metaid}/qc
+    mkdir -p ${ctgqc}/${metaid}/qc/multiqc
+
+    multiqc ${fqdir} -f --outdir ${ctgqc}/${metaid}/qc/multiqc -n DEMUXqc_${metaid}_multiqc_report.html
+
+    """
+}
+
+
 // aggregation
 process gen_aggCSV {
 
@@ -451,9 +471,10 @@ process aggregate {
 process md5sum {
 
 	input:
-	val projid from md5_proj.unique()
 	val x from md5_wait.collect()
-	
+        set projid, projid2 from md5_proj.unique().phase(multiqc_outch.unique())
+
+
 	output:
 	val "md5done" into md5done
 
@@ -481,12 +502,14 @@ process deliverAuto {
 
 	cd ${outdir}
 
-	bash $basedir/bin/ctg-deliver2.sh -u per -d ${projid}
+	bash $basedir/bin/ctg-deliver-sc-rna-10x.sh -u per -d ${projid}
 
 	"""
 	
 
 }
+
+// write to cronlog when pipeline is ready
 process sc_rna_10x_done {
 	
 	input:

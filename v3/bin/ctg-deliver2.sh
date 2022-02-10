@@ -8,7 +8,8 @@ usage() {
     echo ""
     echo "needs ctg-delivery.info.csv in delivery folder (-d DATA-TO-DELIVER) of the format:"
     echo "projid,<PROJID>"
-    echo "email,<customer email adress>"
+    echo "email_customer,<customer email adress>"
+    echo "email_ctg,<ctg-email adress>"
     echo "pipeline,<ctg-pipeline>"
 }
 
@@ -48,20 +49,18 @@ if [ -z $customer ]; then
     echo " .. will use ctg-delivery.info.csv project id."
 fi
 
-# READ ctg-delivery.info.csv within delivery folder 
+# READ ctg-delivery.info.csv within delivery folder (containing info)
 delinfo="$data/ctg-delivery.info.csv"
-
-# Generate pswd
-pswd=$(sh /projects/fs1/shared/ctg-tools/bin/ctg-password-generator.sh)
 
 if [ -f $delinfo ]; then
     
-    email=$(grep "email," $delinfo | cut -f2 -d"," | tr -d '\n\r' | sed "s/;/ /g")
+    email_cust=$(grep "email_customers," $delinfo | cut -f2 -d"," | tr -d '\n\r' | sed "s/;/ /g")
+    email_ctg=$(grep "email_ctg," $delinfo | cut -f2 -d"," | tr -d '\n\r' | sed "s/;/ /g")
     pid=$(grep "projid," $delinfo | cut -f2 -d"," | tr -d '\n\r')
     pipe=$(grep "pipeline," $delinfo | cut -f2 -d"," | tr -d '\n\r')
 
-    if [ -z "$email" ]; then
-	echo "> Error: no customer email found in $delinfo.. this file needs a row with 'email,<customer mail adress>'"
+    if [ -z "$email_cust" ]; then
+	echo "> Error: no customer email found in $delinfo.. this file needs a row with 'email_customers,<customer mail adress>'"
 	exit_abnormal
     fi 
     if [ -z $pid ]; then
@@ -77,6 +76,7 @@ else
     exit_abnormal
 fi
 
+# Set lfs603-customer name 
 if [ -z $customer ]; then
     customer="ctg_${pid}"
 fi
@@ -98,23 +98,33 @@ newmail="${data}/ctg-delivery-mail.$pid.txt"
 # Set scp command for customer (this command will be  put in the emal)
 scpcmd="scp -P 22022 -r $customer@lfs603.srv.lu.se:$lfstarget ."
 
-# bash script for sending mail - to sync to lfs and execute via ssh
-
-# Add CTG BNF user email as "cc" and "from" : so both customer and ctg bnf'er will get the email
-# Set to Pers adress by default (ADD IF STATEMENTS FOR OTHER CTG USERS)
+# Add CTG BNF user email as "from" : so "From"-adress is CTG-BNF'er
+# Set to Pers adress by default (ADD IF-STATEMENTS FOR OTHER CTG USERS)
 ctgmail="per.brattas@med.lu.se" 
-
-ctgName="CTG data delivery"  # This goes as "Sender name" of the email (with the "ctgmail" as from adress)
-
 if [ $ctguser == "per" ]; then
     ctgmail="per.brattas@med.lu.se"
-
 elif [ $ctguser == "percebe" ]; then
     ctgmail="david.lindgren@med.lu.se"
 fi
+# Add Julia and Liesl as CC, so they also are on the delivery-email list.
+cc="julia.braunig@med.lu.se liesl.joubert@med.lu.se"
+# check if there are other CTG members that should be cc'ed
+if [ -z "$email_cust" ]; then
+    echo "> CC' only Julia and Liesl and $ctguser - no other CTG emails specified in email_ctg in $delinfo. This file needs a row with 'email_ctg,<ctg  mail adress>'"
+else
+    cc="$cc $email_cust"
+    echo "> CTG CC: $cc"
+fi
 
+ctgName="CTG data delivery"  # This goes as "Sender name" of the email (with the "ctgmail" as from adress)
 
+##############################
 ## ATTACHMENTS
+# - sc-rna-10x: web summaries (in tar.gz folder) - check if larger than 10MB - only attached if smaller than 10MB
+# - rawdata   : add ctg-interop multiqc html from runfolder
+# - any pipeline (except rawdata) : add multiqc html report from pipeline
+##############################
+
 # If sc-rna-10x : attach websummaries
 att=""
 if [[ "$pipe" == "sc-rna-10x" ]]; then
@@ -123,10 +133,21 @@ if [[ "$pipe" == "sc-rna-10x" ]]; then
     tar -zcvf $data/summaries/web-summaries.tar.gz $data/summaries/web-summaries
     file="$data/summaries/web-summaries.tar.gz"
     file2="/srv/data/$customer/$file" 
+    # Check that the zip file is less than 13MB (limit 16MB for lfs603 mail client)
+    echo "> Check if web summaries tar.gz file is larger than 13MB.."
+    maxsize=13000000
+    filesize=$(stat -c%s "$file")
+    echo "$filesize bytes: $file"
+    echo "$maxsize bytes: Max limit"
+    if [ $filesize > $maxsize ]; then
+	echo "-> File too big to be attached"
+    else
+	echo "> File is small enough to attach"
+	att="$att -a $file2"
+    fi
     att="$att -a $file2"
 fi
-
-# attach multiqc report
+# multiqc report
 # if rawdata, take ctg-interop from runfolder
 if [[ "$pipe" == "rawdata" ]]; then
     mult=$(ls $data/ctg-interop/*.html)
@@ -138,16 +159,15 @@ else
     file2="/srv/data/$customer/$mult"
     att="$att -a $file2"
 fi
-
 # attach ctg-delivery guide
 att="$att -a /srv/data/$ctguser/ctg-delivery-guide-v1.0.pdf"
 
+#########################################################################
+# Generate mutt command (to send email) and scripts to execute the email
+########################################################################
 # Command to execute for sending the email 
-mailcmd="echo '' | mutt -s 'CTG $pipe delivery of $pid' $email -i /srv/data/$customer/$newmail -e 'unmy_hdr from; my_hdr From: ${ctgName} <${ctgmail}>' -e 'set content_type=text/html' -c ${ctgmail} $att"
-#mailcmd_mailx="mailx -s 'CTG $pipe delivery of $pid' -a 'Content-Type: text/html' -a 'From: $ctgName <${ctgmail}>' $email $ctgmail < /srv/data/$customer/$newmail"
-
-echo ""
-echo "> Mutt command:"
+mailcmd="echo '' | mutt -s 'CTG $pipe delivery of $pid' $email_cust -i /srv/data/$customer/$newmail -e 'unmy_hdr from; my_hdr From: ${ctgName} <${ctgmail}>' -e 'set content_type=text/html' -c ${ctgmail} -c ${cc} $att"
+echo ""; echo "> Mutt command:"
 echo $mailcmd
 
 # Create the script that will execute the email delivery (the script will be sent to lfs delivery folder, and executed via ssh below in this current script..)
@@ -162,17 +182,22 @@ lfsmail="/srv/data/$customer/$newmail"
 newdata=$(echo $data | sed 's/\/$//')
 data=$newdata
 
-cmd="rsync -av --progress $data $ctguser@lfs603.srv.lu.se:/srv/data/$customer/"
+### RSYNC COMMAND (from lsens4 to lfs603 delivery folder)
+cmd="/usr/bin/rsync -av --progress $data $ctguser@lfs603.srv.lu.se:/srv/data/$customer/"
 
 echo ""
 echo "> The following arguments are entered:"
 echo " - CTG user          : $ctguser"
-echo " - CTG Email         : $ctgmail" 
-echo " - Customer lfs-user : $customer"
-echo " - Customer email    : $email"
-echo " - Delivery data     : $data"
+echo " - CTG FROM Email    : $ctgmail" 
+echo " - CC' CTG           : $cc"
+echo ""
 echo " - Project ID        : $pid"
+echo " - Customer lfs-user : $customer"
+echo " - Customer email    : $email_cust"
+echo ""
+echo " - Delivery data     : $data"
 echo " - CTG-Pipeline      : $pipe" 
+echo ""
 echo "-- LFS info -- "
 echo " - lfs dir  : $lfstarget"
 echo " - mail scr : $lfsmailscr"
@@ -189,13 +214,15 @@ echo "> Using delivery email template: $emailtemplate"
 cp $emailtemplate $newmail
 sed "s/xxprojidxx/${pid}/g" $newmail > tmp.txt; mv tmp.txt $newmail
 sed "s|xxdownloadcommandxx|${scpcmd}|g" $newmail > tmp.txt; mv tmp.txt $newmail
+# Generate password
+pswd=$(sh /projects/fs1/shared/ctg-tools/bin/ctg-password-generator.sh)
 sed "s|xxpasswordxx|${pswd}|g" $newmail > tmp.txt;  mv tmp.txt $newmail
 rm -f tmp.txt
 echo "> Modified delivery email"; echo ""
 echo ""; echo "";
     
 ## Check if customer exist
-sshcmd="$(cat <<-EOF
+sshcmd="$(cat <<EOF
 if [ -d /srv/data/${customer} ]; then
 echo '1'
 else
@@ -205,8 +232,8 @@ EOF
 )"
 
 # If user does not exists (ssh command returns 2), create user 
-userExist=$(ssh -tt $ctguser@lfs603.srv.lu.se "$sshcmd")
-if [ $userExist != "1" ]; then
+userExist=$(ssh -t -t $ctguser@lfs603.srv.lu.se "$sshcmd")
+if [[ "$userExist" != "1" ]]; then
     echo "-- > user '${customer}' does not exist.. creating user with password"
     
     createcmd="ssh $ctguser@lfs603.srv.lu.se sh /srv/data/create_customer_account.sh $customer <<EOF
@@ -215,7 +242,7 @@ $pswd
 EOF"
     
     #	    echo "$createcmd "
-    echo "- $createcmd " | bash -
+    echo "$createcmd" | bash -
     
     echo ".. changing permissions on customer folder"
     mod="ssh $ctguser@lfs603.srv.lu.se sudo chmod g+s /srv/data/$customer "
@@ -227,11 +254,10 @@ EOF"
     cmod="ssh $ctguser@lfs603.srv.lu.se sudo chmod 770 /srv/data/${customer}"
     echo "- $cmod"
     $cmod
-    sleep 1
 fi
 
 echo ".. Starting rsync .."; echo ""
-echo "- $cmd"
+echo "$cmd"
 $cmd | tee snc.$data.log 
 echo ""
 echo "> Changing permissions and ownership of delivery folder.."
@@ -244,8 +270,9 @@ echo ""
 $mod
 $own
 
-echo "> Setting 'postconf -e message_size_limit=202400000' on lfs603"
-postconfcmd="ssh $ctguser@lfs603.srv.lu.se sudo postconf -e message_size_limit=202400000"
+maillim=16761757
+echo "> Setting 'postconf -e message_size_limit=$maillim' on lfs603"
+postconfcmd="ssh $ctguser@lfs603.srv.lu.se sudo postconf -e message_size_limit=$maillim"
 echo "- $postconfcmd"
 $postconfcmd
 

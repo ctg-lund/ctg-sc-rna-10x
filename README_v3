@@ -1,0 +1,6 @@
+# Updates v3
+
+- take as input CTG_SampleSheet.sc-rna-10x.csv generated in Excel and Save As csv.
+  * the first process takes this and convert to correct csv format 
+  * the script is in ./bin/parse.excel.csv.sh
+- takes 'email_customer' and 'email_ctg' as columns (instead of only 'email' as previous versions) 

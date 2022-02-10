@@ -1,11 +1,14 @@
 <h1>CTG data delivery</h1>
-<h2>The sequencing and processing of your CTG "sc-rna-10x" samples is completed and ready for download.</h2>
+<h3>The sequencing and processing of your CTG "sc-rna-10x" samples is completed and ready for download. Please find download instructions below and QC reports attached.</h3>
 <img src="https://content.ilabsolutions.com/wp-content/uploads/2021/12/2021-12-08_15-26-03.jpg" width="500">
 <h2>CTG-Project-ID</h2><h2 style="background-color:CadetBlue; color:white;">xxprojidxx</h2>
 <h2>CTG-Pipeline</h2><h2 style="background-color:CadetBlue; color:white;">sc-rna-10x<a href="https://github.com/perllb/ctg-sc-rna-10x">(github)</a></h2>
 <br>
+<h3> Note: </h3>
+<p> This email is automatically generated and sent upon completion of the pipeline, in order to provide you the data as soon as possible. The CTG team has not yet assessed the quality of the experiment. Please go through the attached QC reports, to ensure the data looks OK before you proceed with further analysis. The CTG team will go through the QC metrics as soon as possible, and get back to you if we find issues. Please do not hesitate to write us if you have any questions, or encounter any issues.
+</p>
 <hr>
-<p>You can download the files with:
+<h3>You can download the files with:</h3>
 <p>
 <span style="background-color:lightgrey">xxdownloadcommandxx</span>
 <p>Password: <span style="background-color:lightgrey">xxpasswordxx</span>
@@ -45,7 +48,7 @@ and demultiplex samples based on index (<a href="https://support.10xgenomics.com
 
 <h2> Output:</h2>
 <ul>
-<b>xprojidx</b> 
+<b>ctg-xxprojidxx</b> 
 
  <li> <b>qc</b>: Quality control output. 
  <ul>

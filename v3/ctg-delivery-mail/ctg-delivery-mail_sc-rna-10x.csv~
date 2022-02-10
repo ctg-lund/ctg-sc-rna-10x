@@ -5,7 +5,7 @@
 <h2>CTG-Pipeline</h2><h2 style="background-color:CadetBlue; color:white;">sc-rna-10x<a href="https://github.com/perllb/ctg-sc-rna-10x">(github)</a></h2>
 <br>
 <h3> Note: </h3>
-<p> This email is automatically generated and sent upon completion of the pipeline, in order to provide you the data as soon as possible. The CTG team has not yet assessed the quality of the experiment. Please go through the attached QC reports, to ensure the data looks OK before you proceed with further analysis. The CTG team will go through the QC metrics as soon as possible, and get back to you if we find issues. Please do not hesitate to write us if you have any questions, or encounter any issues.
+<p> This email is automatically generated and sent upon completion of the pipeline, to provide you the data as soon as possible. The CTG team has not yet assessed the quality of the experiment. We will go through the metrics as soon as possible, and get back to you if we find issues. Please do not hesitate to write us if you have any questions, or encounter any issues.
 </p>
 <hr>
 <h3>You can download the files with:</h3>
