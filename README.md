@@ -16,8 +16,9 @@ nohup nextflow run pipe-sc-rna-10x.nf > log.pipe-sc-rna-10x.txt &
 ```
 
 ## Cron 
-- `/projects/fs1/shared/ctg-cron/ctg-sc-rna-10x-cron`
-- Looks for runfolders WITH `CTG_SampleSheet.sc-rna-10x.csv`
+- `/projects/fs1/shared/ctg-cron/ctg-pipe-cron/`
+- Looks for complete runfolders WITH `CTG_SampleSheet.sc-rna-10x.csv`
+  - Complete: Sync complete, and run complete.
 - Will start pipeline IF `ctg.sc-rna-10x.done` or `ctg.sc-rna-10x.start` are NOT in runfolder.
 - So if you want to restart it, you can delete ctg.sc-rna-10x* from runfolder
 
