@@ -71,7 +71,7 @@ The nf-pipeline takes the following Columns from samplesheet to use in channels:
 ```
 metaid,2021_012
 [Data]
-Lane,Sample_ID,Sample_Name,index,Sample_Project,Sample_Species,nuclei,force,agg,email,deliver
+Lane,Sample_ID,index,Sample_Project,Sample_Species,nuclei,force,agg,email,deliver
 ,a1,a,SI-TT-A11,2021_Test2_Aydan,human,n,n,n,per.brattas@med.lu.se,y
 ,b2,b,SI-TT-A12,2021_Test2_Aydan,human,n,n,n,per.brattas@med.lu.se,y
 ``` 
@@ -80,7 +80,7 @@ Lane,Sample_ID,Sample_Name,index,Sample_Project,Sample_Species,nuclei,force,agg,
 
 ```
 [Data]
-Lane,Sample_ID,Sample_Name,index,Sample_Project,Sample_Species,nuclei,force,agg,email,deliver
+Lane,Sample_ID,index,Sample_Project,Sample_Species,nuclei,force,agg,email,deliver
 ,a1,a,SI-TT-A11,2021_Test2_Aydan,human,n,n,n,per.brattas@med.lu.se,y
 ,b2,b,SI-TT-A12,2021_Test2_Aydan,human,n,n,n,per.brattas@med.lu.se,y
 ``` 
